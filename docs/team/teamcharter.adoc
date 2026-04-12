@@ -75,7 +75,7 @@ _Hier die Produktvision und den Projektzweck in 2–3 Sätzen beschreiben._
 | Thema | Vereinbarung
 
 | Primärer Kanal
-| [z. B. Discord – #projektname]
+| Discord
 
 | Entscheidungsprotokoll
 | [z. B. Wiki oder per Asciidoc in Ordner <Ordnername>]
@@ -87,7 +87,7 @@ _Hier die Produktvision und den Projektzweck in 2–3 Sätzen beschreiben._
 | [z. B. 09:00 – 16:00 Uhr]
 
 | Videokonferenz-Tool
-| [z. B. Teams / Discord / Google Meet]
+| Discord
 
 | Asynchrone Abstimmung
 | [z. B. kurze Statusupdates im Issue-Diskussion]
