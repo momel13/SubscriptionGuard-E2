@@ -1,7 +1,7 @@
 // --- 1. Projektthema -------------------------
 = SE I - Projektdokumentation: {project-name}
 // --- 2. Teammitglieder -----------------------
-Vorname Nachname <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>
+Moritz Melzer <s88604@htw-dresden.de>; Kevin Fiek <s00000@htw-dresden.de>; Michele_Leon Locke <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Joud Khatib <s00000@htw-dresden.de>; Mohsen Hosseinzadehyousefi <s00000@htw-dresden.de>; Aaron Werner <s00000@htw-dresden.de>;
 // --- 3. Abgabedatum --------------------------
 01. Januar 2025
 // ---------------------------------------------
