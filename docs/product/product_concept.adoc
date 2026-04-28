@@ -1,4 +1,4 @@
-= Produktkonzept: {project-name}
+= Produktkonzept: SubscriptionGuard
 Vorname Nachname <email@domain.org>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
@@ -15,40 +15,24 @@ Interaktionsflüsse und Design-Entscheidungen sind im UX-Konzept beschrieben._
 
 == Motivation
 
-_Warum wird dieses Produkt gebaut? Welches Problem existiert heute, und warum ist es relevant?
-Dieser Abschnitt beschreibt den Ausgangszustand und den Handlungsbedarf — ohne bereits eine
-Lösung zu nennen. 3–5 Sätze genügen._
-
-[Hier die Ausgangssituation und den Handlungsbedarf beschreiben. Beispiel:
-„Studierende an der Hochschule haben heute keinen zentralen Überblick über verfügbare
-Lernräume. Die Suche nach freien Plätzen kostet täglich wertvolle Zeit und führt zu Frust.
-Eine einfache, mobil nutzbare Lösung fehlt bisher."]
+Heutzutage nutzen viele Menschen verschiedene Abonnements, zum Beispiel für Streamingdienste, Software Finessstudios.
+Dabei vergessen sie oft Laufzeiten, Kündigungsfristen, Angebote oder sogar, welche Abonnements überhaupt aktiv sind.
+Dies führt häufig zu unnötigen Kosten und unerwarteten Verlängerungen. Besonders für Studierende mit begrenztem
+Budget Können solche Ausgaben problematisch sein. SubscriptionGuard soll dabei helfen, Abonnements besser zu
+verwalten und einen klaren Überblick über laufende Kosten zu behalten.
 
 == Produktvision
 
-_Die Produktvision beschreibt in einem oder wenigen Sätzen den angestrebten Zielzustand.
-Sie ist inspirierend, prägnant und stabil — sie sollte sich über die gesamte Projektlaufzeit
-nicht wesentlich verändern._
-
 === Visions-Statement
 
-____
-Für [Zielgruppe],
-die [Problem oder Bedarf],
-ist [Produktname]
-ein [Produktkategorie],
-das [zentraler Nutzen].
-Im Gegensatz zu [Alternative]
-bietet unser Produkt [entscheidender Unterschied].
-____
+Für Studierende und andere Nutzerinnen, die Schwierigkeiten haben, ihre Abonnements und regelmäßigen Ausgaben im Blick zu behalten, ist SubscriptionGuard eine Anwendung zur Verwaltung von Abonnements und kosten. Die App hilft dabei, laufende Zahlungen, Kündigungfristen und Verlängerungen übersichtlich darzustellen und unnötige Ausgaben zu vermeiden. Im Unterschied zu einfachen Notizen oder Tabellen bietet SubscriptionGuard Erinnerungen, kostenübersichten und Hinweise auf mögliche Einsparungen.
 
 //Beispiel: Für Studierende der HTWD, die zu wenig Zeit in der Mittagspause zum Essen haben, ist Flying Burger ein  Lieferdient für Burger, der per Drohne liefert. Anders als landgestützte Lieferdienste kann unser Produkt durchs Fenster direkt in den Hörsaal liefern.
 
-NOTE: Das Visions-Statement kann im Team mit der „Elevator Pitch"-Methode oder dem „Future Press Release"-Format erarbeitet werden.
-
 === Zielbild
 
-_Optional: Beschreibe in 2–4 Sätzen, wie die Welt mit diesem Produkt aussieht. Was hat sich für die Nutzer:innen verändert?_
+Mit SubscriptionGuard wissen Nutzerinnen jederzeit, welche Abonnements aktiv sind, wann Zahlungen anstehen und welche Kosten monatlich oder jährlich entstehen. Kündigungsfristen und automatische Verlängerungen werden rechtzeitig angezeigt, sodass unnötige Ausgaben reduziert werden Können. Dadurch erhalten Nutzerinnen mehr finanzielle Kontrolle und können bewusster mit ihrem Geld umgehen.
+
 //[Hier das Zielbild beschreiben]
 
 
@@ -61,14 +45,14 @@ _Wer sind die Zielgruppen, und wie positioniert sich das Produkt im Vergleich zu
 |===
 | Zielgruppe | Beschreibung
 
-| [z. B. Studierende]
-| [Kurzbeschreibung: Wer sind sie? Was ist ihre Motivation?]
+| Studierende
+| Junge Menschen in Ausbildung oder Studium mit begrenztem Budget und oft vielen kleinen Abos (Streaming, Software, Fitness etc.), die einen Überblick brauchen um unnötige Ausgaben zu vermeiden
 
-| [z. B. Lehrende]
-| [Kurzbeschreibung]
+| Optimierungsorientierte Nutzer
+| Menschen, die aktiv ihre Ausgaben analysieren und optimieren wollen um Einsparpotentialle zu finden und das beste Kosten-Nutzen Verhältnis suchen.
 
-| [Weitere Zielgruppe]
-| [Kurzbeschreibung]
+| Vergessliche Zahler
+| Nutzer, die Kündigungsfristen oder Verlängerungen regelmäßig übersehen und Erinnerungen vor Fristen brauchen um eine gewisse Sicherheit zu haben.
 |===
 
 NOTE: Ausführliche Beschreibungen der Nutzenden — Personas, Nutzungskontext,
@@ -80,17 +64,17 @@ typische Aufgaben — sind im link:ux_concept.adoc[UX-Konzept] dokumentiert.
 |===
 | Alternative | Beschreibung | Warum unser Produkt besser passt
 
-| [z. B. E-Mail-Anfrage an Sekretariat]
-| [Wie lösen Nutzer:innen das Problem heute?]
-| [Worin liegt unser Vorteil?]
+| bereits etablierte Finance/Tracker Apps
+| Andere Apps mit ähnlichen Features zum tracken von Ausgaben
+| Teilweise Account zwang -> Datenschutzbedenken, komplizierte Benutzung durch zu viele Features
 
-| [z. B. Aushang an schwarzem Brett]
-| [Beschreibung]
-| [Unterschied]
+| in Bank integrierte Lösungen
+| Auf Banking App / Website bereitgestellte Rechner oder Kategorisierung von Ausgaben.
+| Von Bank zu Bank unterschiedlich, meist nur oberflächlich
 
-| [Weitere Alternative]
-| [Beschreibung]
-| [Unterschied]
+| Manuelles Tracking (z.B. Excel, Kalender)
+| Manuelles Eintragen der Ausgaben in einer oder mehr Formen
+| getrennte Ausgaben und Erinerungen, kann schnell unübersichtlich werden
 |===
 
 
@@ -103,25 +87,30 @@ erklärt, warum bestimmte Entscheidungen getroffen wurden.
 |===
 | Stakeholder | Rolle / Interesse | Erwartungen an das Produkt | Einfluss
 
-| [z. B. Hochschulverwaltung]
-| [Betreiber der Infrastruktur; will Raumauslastung optimieren]
-| [Auslastungsberichte, DSGVO-Konformität]
+| Nutzer:innen (Studierende)
+| Primäre Zielgruppe, wollen Übersicht und Kostenkontrolle 
+| Intuitive Bedienung, transparente Kostenübersicht, zuverlässige Erinnerungen und einfache Abo-Verwaltung
 | Hoch
 
-| [z. B. Studierende]
-| [Hauptnutzer:innen; wollen schnell freie Plätze finden]
-| [Einfache Bedienung, mobiler Zugang]
+| Produktmanagement / Owner
+| Verantwortlich für strategische Ziele wie Nutzerwachstum und Markterfolg
+| hohe Nutzerbindung, skalierbare und marktfähige Features
+| Hoch
+
+| Entwicklungsteam
+| Setzt Anforderungen technisch um, Fokus auf Machbarkeit und Code-Qualität
+| Klare Anforderungen, stabile Architektur, realistische Zeitpläne
+| Hoch
+
+| Banken / Finanzinstitute
+| Stellen Schnittstellen oder Datenformate bereit
+| Sichere Integration, standardisierte Schnittstellen, Zuverlässigkeit
 | Mittel
 
-| [z. B. Lehrende]
-| [Nutzen Räume für Lehrveranstaltungen; wollen Konflikte vermeiden]
-| [Sichtbarkeit ihrer Buchungen]
-| Mittel
-
-| [Weiterer Stakeholder]
-| [Beschreibung]
-| [Erwartungen]
-| [Hoch / Mittel / Niedrig]
+| Subscription-Anbieter
+| Haben Interesse an langfristigen Abos, App kann Kündigungen erleichtern
+| Keine aktive Unterstützung, ggf. eingeschränkte Integrationen
+| Niedrig
 |===
 
 == Hauptfunktionen
@@ -134,25 +123,29 @@ Diese Hauptfunktionen sollten als Epics im Product Backlog für die Gruppierung 
 |===
 | Nutzerbedarf | Hauptfunktion | Priorität
 
-| Studierende wollen schnell sehen, welche Räume gerade frei sind.
-| Echtzeit-Übersicht freier Lernräume
+| Nutzer:innen möchten alle ihre Abonnements zentral erfassen, einsehen und einfach verwalten können.
+| Abo-Verwaltung (anlegen, bearbeiten, löschen, Kategorie)
 | Hoch
 
-| Nutzer:innen wollen einen Raum für einen bestimmten Zeitraum reservieren.
-| Raumbuchung mit Zeitfenster
+| Nutzer:innen brauchen eine Übersicht über Laufzeiten und Kündigungsfristen, um keine Termine zu verpassen.
+| Fristen- und Vertragsmanagement
 | Hoch
 
-| Nutzer:innen wollen ihre aktiven Buchungen verwalten.
-| Buchungsübersicht & Stornierung
+| Nutzer:innen wollen ihre Ausgaben transparent verstehen und Entwicklungen auf einen Blick erkennen.
+| Kostenübersicht & Statistiken
+| Hoch
+
+| Nutzer:innen möchten rechtzeitig benachrichtigt werden, bevor Kosten entstehen oder Fristen ablaufen.
+| Erinnerungs- und Warnsystem
 | Mittel
 
-| Verwaltung will die Auslastung der Räume analysieren.
-| Auslastungsberichte für Administratoren
+| Nutzer:innen wollen Einsparpotenziale erkennen und Entscheidungen zur Reduzierung ihrer Ausgaben treffen.
+| Analyse & Optimierung
 | Niedrig
 
-| [Nutzerbedarf]
-| [Hauptfunktion]
-| [Hoch / Mittel / Niedrig]
+| Nutzer:innen möchten ihre Ausgaben planen, Limits setzen und die Einhaltung ihres Budgets kontrollieren können.
+| Budgetverwaltung
+| Niedrig
 |===
 
 NOTE: Die Reihenfolge entspricht einer ersten groben Priorisierung und wird im Rahmen
@@ -177,21 +170,25 @@ technischen Entscheidungen, die sich daraus ergeben — ohne sie hier zu wiederh
 |===
 | Qualitätsziel | Beschreibung | Messkriterium
 
-| Benutzbarkeit
-| Das Produkt ist ohne Einarbeitung nutzbar.
-| Neue Nutzer:innen finden die Kernfunktion innerhalb von 2 Minuten ohne Hilfe.
-
 | Performance
-| Das Produkt reagiert schnell auf Nutzerinteraktionen.
-| Seitenladezeit unter 2 Sekunden bei normaler Netzwerkverbindung.
+| Das Dashboard muss die Kosten und Statistiken schnell anzeigen.
+| Die Ladezeit fur das Haupt-Dashboard erfolgt sehr schnell und ohne spürbareVerzögerung.
 
-| Verfügbarkeit
-| Das Produkt ist während der Hochschulöffnungszeiten zuverlässig erreichbar.
-| Verfügbarkeit ≥ 99 % während Betriebszeiten.
+| Benutzerfreundlichkeit
+| Die App muss sehr einfach sein. Studenten sollen ihre Abos schnell ohne Hilfe verwalten.
+| Ein Nutzer kann ein neues Abo schnell und intuitiv (ohne externe Hilfe) anlegen.
 
-| [Qualitätsziel]
-| [Beschreibung]
-| [Messkriterium]
+| Datensicherheit
+| Finanzielle Daten sind sehr privat. Wir müssen sie gegen fremden Zugriff schützen.
+| 100% der sensiblen Daten werden lokal verschlüsselt gespeichert.
+
+| Wartbarkeit
+| Der Code muss sauber sein (Clean Code).
+| Neue Kategorien (z.B. „Gaming") können einfach und zeitnah zum System hinzugefügt werden.
+
+| Zuverlässigkeit
+| Die App muss stabil sein.
+|Die Fehlerrate bei Kündigungserinnerungen muss 0% sein.
 |===
 
 === Einschränkungen
@@ -203,21 +200,21 @@ organisatorische, rechtliche oder zeitliche Vorgaben._
 |===
 | Einschränkung | Beschreibung | Kategorie
 
-| Betrieb auf Hochschulinfrastruktur
-| Das System muss auf den vorhandenen Servern der Hochschule betrieben werden können.
-| Technisch
-
 | DSGVO-Konformität
-| Personenbezogene Daten dürfen nur gemäß DSGVO verarbeitet und gespeichert werden.
+| Wir speichern und verarbeiten alle Nutzerdaten nach der europäischen Datenschutz-Grundverordnung.
 | Rechtlich
 
-| Projektlaufzeit
-| Das Produkt muss innerhalb eines Semesters (ca. 4 Monate) lieferbar sein.
-| Zeitlich
+| Kündigung
+|  Die App darf Abonnements nicht automatisch kündigen. Sie sendet nur Warnungen.
+| Rechtlich
 
-| [Einschränkung]
-| [Beschreibung]
-| [Technisch / Rechtlich / Organisatorisch / Zeitlich]
+| Bank-API
+| Eine direkte Bank-Schnidstelle (PSD2) ist sehr komplex. Deshalb ist dieses Feature nur optional.
+| Technisch
+
+| Offline-First
+| Die App muss primär offline funktionieren, damit die Daten sicher auf dem Gerät des Nutzers bleiben.
+| Technisch
 |===
 
 
@@ -227,8 +224,12 @@ organisatorische, rechtliche oder zeitliche Vorgaben._
 |===
 | Version | Datum | Änderung
 
+| 1.1
+| 28.04.2026
+| Produktkonzept hinzugefügt
+
 | 1.0
-| [Datum]
+| 12.04.2026
 | Initiale Version nach Kick-off-Workshop
 
 |===
