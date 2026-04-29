@@ -38,34 +38,34 @@ _Hier die Produktvision und den Projektzweck in 2–3 Sätzen beschreiben._
 
 == Meetings
 
-[cols="2,1,1,2", options="header"]
+[cols="2,2,1,2", options="header"]
 |===
 | Ereignis | Wann | Dauer | Moderation
 
 | Standup (Daily / Weekly)
-| [z. B. täglich 09:30]
-| [z. B. 15 min]
-| [Rolle / Person]
+| täglich 09:30
+| 15 min
+| Product Owner/ Scrum Master
 
 | Sprint Planning
-| [z. B. montags, Sprintstart]
-| [z. B. 2 h]
-| [Rolle / Person]
+| montags, Sprintstart
+| 2 h
+| Scrum Master
 
 | Sprint Review
-| [z. B. freitags, Sprintende]
-| [z. B. 1 h]
-| [Rolle / Person]
+| freitags, Sprintende
+| 1 h
+| Product Owner
 
 | Retrospektive
-| [z. B. freitags, nach Review]
-| [z. B. 1 h]
-| [Rolle / Person]
+| freitags, nach Review
+| 1 h
+| Scrum Master
 
 | Backlog Refinement
-| [z. B. mittwochs, wöchentlich]
-| [z. B. 1 h]
-| [Rolle / Person]
+| mittwochs, wöchentlich
+| 1 h
+| Product Owner
 |===
 
 == Kommunikation
@@ -81,16 +81,16 @@ _Hier die Produktvision und den Projektzweck in 2–3 Sätzen beschreiben._
 | [z. B. Wiki oder per Asciidoc in Ordner <Ordnername>]
 
 | Erwartete Reaktionszeit
-| [z. B. innerhalb von 4 Stunden während Kernzeit]
+| Innerhalb von 24 Stunden an Werktagen
 
 | Kernarbeitszeit
-| [z. B. 09:00 – 16:00 Uhr]
+| 17:00 - 22:00 Uhr an Werktagen
 
 | Videokonferenz-Tool
 | Discord
 
 | Asynchrone Abstimmung
-| [z. B. kurze Statusupdates im Issue-Diskussion]
+| Kommentare in GitHub Issues, Pull Requests und kurze Updates im Discord-Kanal
 |===
 
 == Arbeitsweise
