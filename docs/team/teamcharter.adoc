@@ -20,19 +20,19 @@ _Hier die Produktvision und den Projektzweck in 2–3 Sätzen beschreiben._
 | Rolle | Person
 
 | Product Owner
-| [Name]
+| Moritz
 
 | Scrum Master
-| [Name]
+| Aaron
 
 | Tech Lead footnote:[optionale Rolle, aber empfohlen, um technische Entscheidungen zu koordinieren]
-| [Name]
+| Kevin
 
 | Entwickler:innen
-| [Namen]
+| Hiep, Jound, Fatemeh, Michele
 
 | Stakeholder (Hauptansprechpartner)
-| [Name]
+| Mohsen
 |===
 
 
