@@ -19,28 +19,45 @@ Technische Implementierungsdetails gehören nicht hierher!
 |===
 | Begriff / Abkürzung | Definition | Synonyme / Abgrenzungen
 
-| Bestellung
-| Eine vom Nutzer ausgelöste Anforderung, ein oder mehrere Produkte zu erwerben.
-  Eine Bestellung durchläuft verschiedene Status (offen, bezahlt, versendet, abgeschlossen).
-| Auftrag; nicht zu verwechseln mit „Warenkorb" (noch nicht abgeschlossen)
+| Kündigungsfrist
+| Zeitraum, bis wann gekündigt werden muss
+| Kündigungszeitpunkt; nicht zu verwechseln mit Vertragslaufzeit
 
-| Nutzer
-| Eine Person, die das System aktiv verwendet. Nutzer müssen registriert und eingeloggt
-  sein, um Bestellungen aufzugeben.
-| Anwender, Benutzer; abzugrenzen von „Administrator"
+| Abo
+| Wiederkehrende Zahlung für einen Dienst
+| Subscription, Abonnement; nicht: einmalige Zahlung
 
-| Produkt
-| Ein im System angebotener Artikel, der bestellt werden kann. Ein Produkt hat eine
-  Bezeichnung, einen Preis und eine Verfügbarkeit.
-| Artikel, Ware
+| Intervall 
+| Zahlungsrhythmus (monatlich, jährlich, wöchentlich)
+| Zahlungsperiode; Abrechnungszyklus
 
-| [Begriff]
-| [Präzise, fachliche Definition in 1–3 Sätzen]
-| [Synonyme oder Abgrenzungen zu ähnlichen Begriffen]
+| Auto-Renewal
+| Automatische Vertragsverlängerung
+| Automatische Verlängerung; nicht: manuelle Verlängerung
 
-| [Begriff]
-| [Präzise, fachliche Definition in 1–3 Sätzen]
-| [Synonyme oder Abgrenzungen zu ähnlichen Begriffen]
+| Einsparpotenzial 
+| Mögliche Ersparnis durch Kündigung/ Wechsel 
+| Sparmöglichkeit; Optimierungspotenzial
+
+| Nutzungsbewertung
+| Subjektive Einschätzung der Nutzungshäufigkeit 
+| Nutzungseinschätzung; keine objektive Messung
+
+| Budget
+| Selbstgesetztes Ausgabenlimit
+| Kostenlimit; Ausgabengrenze
+
+| MVP 
+| Minimum Viable Product – Basisversion mit Kernfunktionen 
+| Erstversion; nicht: vollständiges Produkt
+
+| DSGVO 
+| Datenschutz-Grundverordnung
+| EU-Datenschutzrecht; GDPR (engl.)
+
+| PSD2 
+| Payment Services Directive 2 – EU-Richtlinie für Bankenschnittstellen
+| EU-Zahlungsdiensterichtlinie; nicht direkt im Projekt umgesetzt
 |===
 
 
