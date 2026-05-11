@@ -172,15 +172,13 @@ Beschreiben Sie, was Ihr Team im nächsten Sprint beibehalten, ändern oder gezi
 [cols="1,3", options="header"]
 |===
 | Kriterium | Ihre Antwort
-
-| Beibehalten
-| Aufgabenverteilung im Team
-| Hilfestellung bei fragen 
-| bereitschaft aufgaben zu übernehmen
-
-| Ändern / verbessern
-| bessere Festlegung und Einhaltung von Fristen der Aufagaben
-| organisatorisch besser werden und zeitnah feedback geben
-| Offene Frage für Sprint 2
+ Beibehalten
+| Aufgabenverteilung im Team, Hilfestellung bei fragen,bereitschaft aufgaben zu übernehmen
+|
+ Ändern / verbessern
+| bessere Festlegung und Einhaltung von Fristen der Aufagaben, organisatorisch besser werden und zeitnah feedback geben
+| 
+| 
+Offene Frage für Sprint 2
 | Wie kann die Umsetzung des Produktkonzeptes aussehen? 
 |===
