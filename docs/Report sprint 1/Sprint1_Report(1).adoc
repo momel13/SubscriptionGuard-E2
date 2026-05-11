@@ -1,0 +1,186 @@
+= Sprint-1-Report: Produktkonzept und agile Arbeitsweise
+
+// Bitte fügen Sie hier die Informationen zu Ihrem Team, Projekt, Datum und Repository ein.
+Team:: E2
+Projektname:: SubscriptionGuard
+Datum:: 09.05.2026
+Repository-Link:: https://github.com/momel13/SubscriptionGuard-E2
+
+====
+Dieser Report soll auf maximal einer Seite zeigen, wie Ihr Team in Sprint 1 gearbeitet hat,
+welche Praktiken Sie angewendet haben, welche Artefakte entstanden sind und was Sie daraus gelernt haben.
+
+Der Report ist kein Tätigkeitsprotokoll. Beschreiben Sie nicht nur, _was_ Sie gemacht haben,
+sondern vor allem, _warum_ Sie es gemacht haben und was sich dadurch verbessert oder verändert hat.
+====
+
+== 1. Sprintziel und zentrale Fragestellung
+
+Formulieren Sie Ihr Sprintziel in 1–2 Sätzen. Leitfragen:
+
+* Welches Produktproblem oder Nutzerbedürfnis wollte Ihr Team in diesem Sprint besser verstehen?
+* Welche zentrale Unsicherheit sollte Sprint 1 reduzieren?
+* Warum ist Ihr Produktkonzept nach diesem Sprint besser begründet als vorher?
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Sprintziel
+| Sprint 1 diente der Ausarbeitung eines Produktkonzepts für SubscriptionGuard. Dabei wollte das Team besser verstehen welche Probleme im Umgang mit Abonnements am relevantesten sind und welche Hauptfunktionen den größten Mehrwert bieten.
+
+| Zentrale Unsicherheit / Annahme
+| Die zentrale Unsicherheit bestand darin, herauszufinden was Nutzer von der App erwarten. Durch die erstellung von Personas, Wireframes, User Stories und Epics konnte ein begründetes Produktkonzept erstellt werden um diese Erwartungen zu erfüllen.
+|===
+
+
+== 2. Erwartete Praktiken in Sprint 1
+
+Wählen Sie 3–5 Praktiken aus, die für Ihren Sprint besonders relevant waren.
+Beziehen Sie sich bevorzugt auf Praktiken, die in den Hinweisen für Sprint 1 beschrieben werden. Mögliche Praktiken:
+
+* Produktvision formulieren
+* Problem und Zielgruppe eingrenzen
+* Stakeholder identifizieren
+* Personas oder Nutzergruppen beschreiben
+* Nutzerziele formulieren
+* Epics und User Stories ableiten
+* Product Backlog initial strukturieren und priorisieren
+* Akzeptanzkriterien für ausgewählte User Stories formulieren
+* User Stories zerlegen oder verfeinern
+* Wireframes oder Low-Fidelity-Prototypen erstellen
+* Feedback zum Produktkonzept einholen
+* Feedback auswerten und Artefakte anpassen
+* Qualitätsanforderungen und Randbedingungen erfassen
+* ethische Risiken, Missbrauchsszenarien oder Ausschlussrisiken reflektieren
+* Rollen, Zusammenarbeit oder Arbeitsvereinbarungen im Team klären
+
+[cols="1,2,2,2", options="header"]
+|===
+| Praktik
+| Konkrete Anwendung in unserem Sprint
+| Nachweis / Artefakt (Link einfügen)
+| Nutzen, Erkenntnis oder Anpassung
+
+| 
+| 
+
+| Produktvision formulieren
+| Wir haben Motivation, Produktvision und Zielbild für SubscriptionGuard ausformuliert. Die Vision benennt explizit die Zielgruppe (Studierende mit begrenztem Budget) und grenzt SubscriptionGuard von einfachen Notizen oder Tabellen durch Erinnerungen, Kostenübersichten und Einsparhinweise ab.
+| `docs/product/product_concept.adoc`, Abschnitt "Motivation und Produktvision"
+| Die Vision lieferte den Maßstab für spätere Priorisierungen. Sie machte z.B. klar, warum PSD2-Anbindung zwar denkbar, aber nicht Kern der Lösung ist – das eigentliche Versprechen ist Übersicht und rechtzeitige Information, nicht Bankintegration.
+
+| Stakeholder identifizieren
+| Wir haben Stakeholder systematisch nach Kategorien erfasst: Direkte (Nutzer, Product Owner, Entwicklungsteam), Indirekte (Datenschutzbeauftragte, IT-Betrieb, App-Store-Betreiber, Gesetzgeber, Banken, Wettbewerber) und Gegner (Subscription-Anbieter). Für die kritischen Stakeholder haben wir die jeweiligen Interessen und ihren Einfluss auf den Lösungsraum dokumentiert.
+| `docs/product/product_concept.adoc`, Abschnitt "Stakeholder"
+| Die Analyse hat zwei wichtige Erkenntnisse geliefert: Erstens schränkt der Datenschutzbeauftragte als Stakeholder den Lösungsraum stark ein (lokale Speicherung statt Cloud). Zweitens gibt es mit den Subscription-Anbietern ausdrücklich Gegner – das hat unsere Vorsicht bei der Funktion "automatisch kündigen" begründet (nur Erinnerung, keine automatische Abmeldung).
+
+| Personas und Nutzerziele beschreiben
+| Wir haben zwei realitätsnahe Personas ausgearbeitet, die unterschiedliche Nutzungssituationen abbilden: eine 22-jährige BWL-Studentin, die einen Überblick über kleine, summierte Abo-Ausgaben sucht, und eine 34-jährige Berufstätige, die zuverlässige Kündigungserinnerungen für komplexere Verträge braucht. Für jede Persona haben wir Rolle, Alter, Zitat, Ziele, Frustrationen, Verhalten und Bezug zum Produkt festgehalten.
+| `docs/product/ux_concept.adoc`, Abschnitt "Personas"
+| Die Gegenüberstellung der beiden Personas hat sichtbar gemacht, dass beide trotz unterschiedlicher Lebenssituationen dieselben Kernbedürfnisse haben – Übersicht und rechtzeitige Erinnerungen –, während Analyse- und Budgetfunktionen nur sekundär gewünscht sind. Diese Erkenntnis war direkter Auslöser dafür, Verwaltung und Erinnerungen im Backlog als "Must" einzustufen und Analyse/Budget niedriger zu priorisieren.
+
+| Epics und User Stories ableiten
+| Aus der Produktvision haben wir acht Hauptfunktionen als Epics abgeleitet (Abo-Verwaltung, Fristen- und Vertragsmanagement, Kostenübersicht, Erinnerungssystem, Analyse, Import/Export, Budgetverwaltung, Einstellungen). Für die wichtigsten Epics haben wir konkrete Use Cases mit Vor-/Nachbedingungen und Haupt-/Alternativabläufen formuliert (UC1 Abo anlegen, UC2 Kündigungserinnerung, UC3 Kostenanalyse, UC4 CSV-Import, UC5 Budget setzen).
+| `docs/product/product_concept.adoc`, Abschnitte "Hauptfunktionen" und "Use Cases"; GitHub Issues mit Label `epic`
+| Durch die Aufteilung in Epics wurde sichtbar, dass die Funktionen sehr unterschiedliche Reifegrade haben: Abo-Verwaltung und Erinnerungen sind Grundlage, ohne die alles andere keinen Sinn ergibt. Analyse und Budgetfunktionen setzen darauf auf. Diese Erkenntnis hat unsere Priorisierung geprägt – nicht parallel an allem arbeiten, sondern die Basis zuerst.
+
+| Qualitätsanforderungen und Randbedingungen erfassen
+| Wir haben fünf Qualitätsziele entlang der ISO 25010 definiert (Performance, Benutzerfreundlichkeit, Datensicherheit, Wartbarkeit, Zuverlässigkeit) und für jedes ein konkretes Messkriterium festgelegt (z.B. Dashboard-Ladezeit ≤ 2 Sekunden, Abo anlegen in ≤ 60 Sekunden, 0 % Fehlerrate bei Kündigungserinnerungen). Ergänzend haben wir rechtliche, technische und methodische Randbedingungen dokumentiert (DSGVO, keine automatische Kündigung, PSD2 optional, Offline-First, AsciiDoc).
+| `docs/product/product_concept.adoc`, Abschnitt "Qualitätsziele und Einschränkungen"
+| Die messbaren Kriterien zwingen uns, Qualität nicht nur als Schlagwort zu nennen, sondern später überprüfbar zu machen. Die Randbedingungen haben außerdem direkt eine Produktentscheidung verändert: Die rechtliche Vorgabe "keine automatische Abmeldung" und die technische Komplexität von PSD2 haben die Bank-Schnittstelle zu einem optionalen Feature degradiert.
+|===
+
+== 3. Wichtigste Lernergebnisse aus Sprint 1
+
+Beschreiben Sie 2–3 zentrale Erkenntnisse aus Sprint 1. Leitfragen:
+
+* Was hat Ihr Team über Nutzer, Problem, Kontext oder Produktidee gelernt?
+* Welche Annahme wurde bestätigt, widerlegt oder präzisiert?
+* Welche Rückmeldung hatte den größten Einfluss auf Ihr Produktkonzept?
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Einfache aber verläsliche Features statt komplexer Finanzplanung
+| Viele Nutzer kennen ihre Abonnements verlieren aber schnell den Überblick über laufende Kosten und Kündigungsfristen. Besonders wichtig sind einfache Übersichten und rechtzeitige Erinnerungen, während umfangreiche Budget- oder Finanzfunktionen für sie weniger relevant sind. Damit wurde die Annahme bestätigt, dass der größte Mehrwert der App die einfache und Verständliche Unterstützung bei den Finanzen ist.
+
+| Erkennen und priorisieren der Kernfunktionen
+| Durch das Ausarbeiten der Personas wurde deutlich, dass Analysefunktionen zwar für einige Nutzer interesannt sind, aber eine stabile Grundlage erfordern. Die Verwaltung der laufenden Kosten und die Übersicht davon hat deshalb die höchste Priorität. Analyse- und Budgetfunktionen wurden zunächst niedriger eingestuft.
+
+
+|===
+ 
+== 4. Änderungen am Produktkonzept
+
+Beschreiben Sie konkret anhand von drei Beispielen, was sich durch Ihre Arbeit und Ihr Feedback verändert hat.
+
+[cols="2,2,2", options="header"]
+|===
+| Ursprüngliche Annahme / Idee
+| Neue Erkenntnis
+| Anpassung am Produktkonzept oder Backlog
+
+| Einbindung der PSD2 Schnittstelle
+| Sehr komplexe Umsetzung
+| Funktion ist optional, wird wahrscheinlich nicht eigefügt
+
+| Importfunktion von Ausgaben
+| Wenig Nutzen für den Mehraufwand durch Implementierung und durch Einsatz der Nutzer, realistisch ist nur eine sehr seltene Anwendung von sehr wenigen Nutzern
+| Funktion mit sehr niedrigerer Priorität
+
+| harte Performance Ziele
+| harte Performance Ziele (z.B. Ladezeit <5s, Anlegen neuer Kategorie im System in unter X Minuten) sind nicht sinnvoll, da diese Teilweise nur ungenau gemessen werden können oder außerhalb unserer Kontrolle liegen
+| keine harten Ziele definiert, stattdessen abstraktere Beschreibung
+|===
+
+
+== 5. Qualität, Randbedingungen und Verantwortung
+
+Beschreiben Sie kurz, welche nicht-funktionalen Anforderungen, Randbedingungen oder ethischen Aspekte Sie identifiziert haben. Leitfragen:
+
+* Welche Qualitätsanforderungen sind für Ihr Produkt besonders wichtig?
+* Welche technischen, organisatorischen, rechtlichen oder fachlichen Randbedingungen gibt es?
+* Welche möglichen Schäden, Missbrauchsszenarien oder Ausschlussrisiken haben Sie erkannt?
+
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Qualitätsanforderungen
+| Benutzerfreundlichkeit, Datensicherheit, Zuverlässigkeit
+
+| Randbedingungen
+| Offline-First, DSGVO konform, keine automatischen Kündigungen
+
+| Ethische Aspekte / Risiken
+| Druck auf Nutzer durch permanete Darstellung der Kosten und Einsprpotenziale, Zugriff auf und Missbrauch sensibler Finanzdaten
+|===
+
+
+== 6. Anpassung der Arbeitsweise für Sprint 2
+
+Beschreiben Sie, was Ihr Team im nächsten Sprint beibehalten, ändern oder gezielt verbessern will. Leitfragen:
+
+* Welche Arbeitsweise hat gut funktioniert?
+* Was hat Ihre Zusammenarbeit behindert?
+* Was wollen Sie in Sprint 2 konkret anders machen?
+* Welche offene Frage soll Sprint 2 beantworten?
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Beibehalten
+| Aufgabenverteilung im Team
+| Hilfestellung bei fragen 
+| bereitschaft aufgaben zu übernehmen
+
+| Ändern / verbessern
+| bessere Festlegung und Einhaltung von Fristen der Aufagaben
+| organisatorisch besser werden und zeitnah feedback geben
+| Offene Frage für Sprint 2
+| Wie kann die Umsetzung des Produktkonzeptes aussehen? 
+|===
