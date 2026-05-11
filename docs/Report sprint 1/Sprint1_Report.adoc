@@ -62,9 +62,6 @@ Beziehen Sie sich bevorzugt auf Praktiken, die in den Hinweisen für Sprint 1 be
 | Nachweis / Artefakt (Link einfügen)
 | Nutzen, Erkenntnis oder Anpassung
 
-| 
-| 
-
 | Produktvision formulieren
 | Wir haben Motivation, Produktvision und Zielbild für SubscriptionGuard ausformuliert. Die Vision benennt explizit die Zielgruppe (Studierende mit begrenztem Budget) und grenzt SubscriptionGuard von einfachen Notizen oder Tabellen durch Erinnerungen, Kostenübersichten und Einsparhinweise ab.
 | `docs/product/product_concept.adoc`, Abschnitt "Motivation und Produktvision"
@@ -90,6 +87,7 @@ Beziehen Sie sich bevorzugt auf Praktiken, die in den Hinweisen für Sprint 1 be
 | `docs/product/product_concept.adoc`, Abschnitt "Qualitätsziele und Einschränkungen"
 | Die messbaren Kriterien zwingen uns, Qualität nicht nur als Schlagwort zu nennen, sondern später überprüfbar zu machen. Die Randbedingungen haben außerdem direkt eine Produktentscheidung verändert: Die rechtliche Vorgabe "keine automatische Abmeldung" und die technische Komplexität von PSD2 haben die Bank-Schnittstelle zu einem optionalen Feature degradiert.
 |===
+
 
 == 3. Wichtigste Lernergebnisse aus Sprint 1
 
@@ -172,13 +170,13 @@ Beschreiben Sie, was Ihr Team im nächsten Sprint beibehalten, ändern oder gezi
 [cols="1,3", options="header"]
 |===
 | Kriterium | Ihre Antwort
- Beibehalten
-| Aufgabenverteilung im Team, Hilfestellung bei fragen,bereitschaft aufgaben zu übernehmen
-|
- Ändern / verbessern
-| bessere Festlegung und Einhaltung von Fristen der Aufagaben, organisatorisch besser werden und zeitnah feedback geben
-| 
-| 
-Offene Frage für Sprint 2
+
+| Beibehalten
+| Aufgabenverteilung im Team
+
+| Ändern / verbessern
+| bessere Festlegung und Einhaltung von Fristen der Aufagaben
+
+| Offene Frage für Sprint 2
 | Wie kann die Umsetzung des Produktkonzeptes aussehen? 
 |===
