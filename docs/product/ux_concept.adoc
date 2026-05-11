@@ -20,7 +20,7 @@ auf Annahmen allein._
 
 _Hinweis: Im link:product_concept.adoc[Produktkonzept] werden Zielgruppen nur benannt. Hier werden sie als Personas ausgearbeitet._
 
-=== Persona 1: [Name]
+=== Persona 1: [Florian Ruhdoplh]
 
 [cols="1,3"]
 |===
@@ -48,7 +48,7 @@ _Hinweis: Im link:product_concept.adoc[Produktkonzept] werden Zielgruppen nur be
 | Will alle Abos auf einen Blick sehen; Braucht Erinnerungen für Kündigungen; Möchte schnell erkennen, wo sie sparen kann
 |===
 
-=== Persona 2: [Name]
+=== Persona 2: [Chantal zawidziki]
 
 [cols="1,3"]
 |===
