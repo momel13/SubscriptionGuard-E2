@@ -20,7 +20,7 @@ auf Annahmen allein._
 
 _Hinweis: Im link:product_concept.adoc[Produktkonzept] werden Zielgruppen nur benannt. Hier werden sie als Personas ausgearbeitet._
 
-=== Persona 1: [Florian Ruhdolpf]
+=== Persona 1: Florian Ruhdolpf
 
 [cols="1,3"]
 |===
@@ -48,7 +48,7 @@ _Hinweis: Im link:product_concept.adoc[Produktkonzept] werden Zielgruppen nur be
 | Will alle Abos auf einen Blick sehen; Braucht Erinnerungen für Kündigungen; Möchte schnell erkennen, wo sie sparen kann
 |===
 
-=== Persona 2: [Sophie müller]
+=== Persona 2: Sophie Müller
 
 [cols="1,3"]
 |===
@@ -89,22 +89,19 @@ _Der Nutzungskontext gemäß DIN EN ISO 9241-11 beschreibt die Lebenswirklichkei
 | Aspekt | Beschreibung
  
 | Benutzer
-| [Eigenschaften, Kenntnisse, Erfahrung, Motivation der Nutzenden.
-(Verweis auf Personas für ausführliche Beschreibungen)]
+| Studierende und Berufstätige (siehe Personas Florian und Sophie). Sie haben meist wenig Zeit, besitzen grundlegende bis gute Smartphone-Kenntnisse, möchten sich aber nicht in komplexe Buchhaltungs- oder Finanz-Tools einarbeiten. Ihre Hauptmotivation ist Geldersparnis und die Reduzierung von mentalem Stress (Mental Load).
  
 | Ziele & Aufgaben
-| [Was wollen Nutzende erreichen?
-Welche konkreten Aufgaben führen sie dazu aus?]
+| **Ziele:** Überblick über laufende Fixkosten behalten; rechtzeitig vor ungewollten Vertragsverlängerungen gewarnt werden. +
+**Aufgaben:** Neue Abonnements (Name, Preis, Frist) schnell eintragen; bestehende Abos pausieren oder als gekündigt markieren; die monatliche finanzielle Belastung auf dem Dashboard prüfen.
  
 | Ressourcen
-| [Hardware, Software, Eingabegeräte, Hilfsmittel, die zur Nutzung des Produkts benötigt werden oder vorhanden sind.]
+| Primär das eigene Smartphone (iOS oder Android) mit Touch-Bedienung. Für die Nutzung wird eine grundlegende Internetverbindung erwartet, jedoch muss die App aufgrund der Sensibilität von Finanzdaten Kernfunktionen auch offline bereitstellen können.
  
 | Umgebung
-| [Technische Umgebung: Netzwerk, Plattformen, Betriebssysteme, Interoperabilität.
-
- Physische Umgebung: Ort der Nutzung, Lichtverhältnisse, Lärm, Mobilität.
-
-Soziale & organisatorische Umgebung: Organisationsstruktur, Zusammenarbeit, Unterbrechungen, rechtliche oder regulatorische Rahmenbedingungen.]
+| **Physische Umgebung:** Nutzung erfolgt oft "nebenbei" — unterwegs in der Bahn, in kurzen Pausen oder abends auf dem Sofa. Die Aufmerksamkeitsspanne ist kurz. +
+**Technische Umgebung:** Wechselhafte Netzwerkqualität (Mobilfunknetz). +
+**Soziale/Rechtliche Umgebung:** Hohes Bedürfnis nach Privatsphäre und strengen Datenschutzrichtlinien (DSGVO), da es sich um persönliche Finanzdaten handelt.
  
 |===
 
@@ -120,18 +117,21 @@ Der Prozess kostet sie im Schnitt 20 Minuten pro Tag."]
 
 _Was könnte die Akzeptanz oder Nutzung des Produkts beeinträchtigen?_
 
-[cols="2,2", options="header"]
+[cols="2,3", options="header"]
 |===
 | Hürde / Risiko | Mögliche Reaktion im Design
 
-| [z. B. Datenschutzbedenken bei Registrierungspflicht]
-| [z. B. Gastzugang für erste Nutzung anbieten]
+| **Datenschutzbedenken:** Angst davor, sensible Finanzdaten (Was kostet wie viel?) in einer fremden App einzutragen.
+| **Offline-First & Transparenz:** Lokale Datenspeicherung auf dem Gerät ohne Cloud-Zwang. Prominenter Hinweis beim Onboarding, dass Daten das Smartphone nicht verlassen.
 
-| [z. B. Schlechte WLAN-Verfügbarkeit in Gebäudeteilen]
-| [z. B. Offline-Ansicht für zuletzt geladene Daten]
+| **Hoher initialer Aufwand:** Das manuelle Eintippen aller bestehenden Abos beim ersten App-Start ist mühsam und führt zu Abbrüchen.
+| **Schnelleingabe:** Bereitstellung von Templates/Icons für bekannte Dienste (z. B. Netflix, Spotify, Gym) mit vorausgefüllten Standard-Kündigungsfristen.
 
-| [Weitere Hürde]
-| [Reaktion]
+| **Benachrichtigungs-Blindheit:** Push-Erinnerungen für Kündigungen werden weggewischt oder gehen in der Flut anderer App-Meldungen unter.
+| **Visuelle Dringlichkeit:** Anpassbare Vorlauftage für Erinnerungen und farbliche Hervorhebung (z.B. Rot) im Dashboard für akut kündbare Abos.
+
+| **Fehlendes Vertrauen in die App:** Wenn die App eine Frist vergisst zu melden, ist der Nutzer finanziell geschädigt und deinstalliert die App sofort.
+| **Zuverlässigkeit:** Klare Bestätigungsdialoge beim Setzen von Erinnerungen und Integration in das native Hintergrund-System (Service Workers) des Geräts.
 |===
 
 == Systemweite Interaktionsflüsse
