@@ -1,180 +1,342 @@
+= SubscriptionGuard - Design
+:toc:
+:toclevels: 3
+:sectnums:
 
+Dieses Dokument beschreibt das technische Design von SubscriptionGuard: Code-Organisation,
+Schichten, Komponenten, Datenmodell, zentrale Interaktionsfluesse, Designmuster und
+Konventionen. Es fuehrt die systemweite Sicht aus `design (1).adoc` mit der detaillierten
+Frontend-Struktur aus der vorherigen `design.adoc` zusammen.
 
-_Dieses Dokument beschreibt die interne Struktur des Systems, wie der Code organisiert ist, aus welchen Komponenten das System besteht, wie diese zusammenarbeiten, und welche Designmuster eingesetzt werden. Der Fokus liegt auf dem *Wie* der Implementierung._
+== Systemuebersicht und Schichtenarchitektur
 
----
+SubscriptionGuard folgt einer 3-Schichten-Architektur plus externe Dienste. Dadurch bleiben
+Benutzeroberflaeche, Geschaeftslogik und Datenhaltung getrennt. Das Frontend kennt die
+Datenbank nicht direkt, sondern spricht mit der Logikschicht ueber REST.
 
-== Systemübersicht & Schichtenarchitektur
-
-Das System folgt einer klaren 3-Schichten-Architektur (plus externe Dienste), um Benutzeroberfläche, Geschäftslogik und Datenhaltung sauber voneinander zu trennen .
-
-=== Schichtendiagramm
-
-[plantuml, layer-diagram, svg]
-....
+[plantuml,layer-diagram,svg]
+----
 @startuml
-skinparam monochrome true
-skinparam defaultFontSize 13
-skinparam rectangleBorderThickness 1
+top to bottom direction
+skinparam componentStyle rectangle
 
-rectangle "Präsentationsschicht\n(React, Chart.js)" as presentation
-rectangle "Logikschicht\n(Node.js, Express, node-cron)" as logic
-rectangle "Datenschicht\n(PostgreSQL, Supabase, SQLite)" as persistence
-rectangle "Externe Dienste\n(FCM/APNS, Supabase Auth)" as external
+rectangle "Praesentationsschicht\nReact, TypeScript, Mantine, Chart.js" as Presentation
+rectangle "Logikschicht\nNode.js, Express, TypeScript, node-cron" as Logic
+rectangle "Datenschicht\nPostgreSQL/Supabase, SQLite Dev" as Data
+rectangle "Externe Dienste\nSupabase Auth, FCM/APNS/Web Push" as External
 
-presentation -down-> logic : REST / JSON
-logic -down-> persistence : SQL / pg-Treiber
-logic -right-> external : HTTPS
-presentation -right-> external : JWT / Token
-
-note right of presentation : User Interface,\nDiagramme, Push-Anzeige
-note right of logic : Abo-Management, Fristen-Job,\nCSV-Parsing, Analyse-Engine
-note right of persistence : Tabellen, Indizes,\nPrepared Statements
+Presentation --> Logic : REST / JSON / FormData
+Presentation --> External : Auth-Session, Browser-Push-Berechtigung
+Logic --> Data : SQL / Prepared Statements
+Logic --> External : Auth pruefen, Push senden
 @enduml
-....
+----
 
-=== Beschreibung der Schichten
-
-[cols="1,2,2", options="header"]
+[cols="1,3,3",options="header"]
 |===
-| Schicht | Verantwortung | Darf abhängen von
+|Schicht |Verantwortung |Darf abhaengen von
 
-| Präsentationsschicht (Frontend)
-| UI rendern, lokales State-Management, Diagramme zeichnen (Chart.js), API-Calls absetzen[cite: 6, 1253].
-| Logikschicht (REST-API)
+|Praesentationsschicht
+|UI rendern, Eingaben erfassen, lokales State-Management, Diagramme zeichnen, Upload/Download
+starten, API-Calls absetzen und Notifications anzeigen.
+|Logikschicht, Auth-/Browser-Dienste.
 
-| Logikschicht (Backend)
-| Routing, Eingabevalidierung, Aggregation der Daten, CSV-Parsing und periodische Cron-Jobs (Fristenprüfung)[cite: 6, 1253].
-| Datenschicht, Externe Dienste
+|Logikschicht
+|Routing, Auth-Pruefung, serverseitige Validierung, Aggregation, CSV-Parsing,
+Budgetstatus, Fristen-Job und Notification-Erzeugung.
+|Datenschicht, externe Dienste.
 
-| Datenschicht (Datenbank)
-| Persistente Speicherung der Nutzer, Abos, Budgets und Kategorien. Absicherung der Datenintegrität durch SQL-Constraints [cite: 6, 21-25, 1253, 1268-1272].
-| Keine äußeren Schichten
+|Datenschicht
+|Persistente Speicherung von Nutzern, Abos, Kategorien, Zahlungen, Budgets und Notifications;
+Absicherung durch Constraints und Indizes.
+|Keine aeusseren Schichten.
 
-| Externe Dienste
-| Delegierung von standardisierten Aufgaben wie Authentifizierung (Supabase Auth) und Push-Notifications[cite: 6, 1253].
-| -
+|Externe Dienste
+|Standardisierte Dienste wie Authentifizierung und Push-Zustellung.
+|Je nach Dienst.
 |===
 
-== Komponentenübersicht
+== Komponentenuebersicht
 
-=== Komponentendiagramm
+=== Systemweite Komponenten
 
-[plantuml, component-diagram, svg]
-....
+[plantuml,component-diagram,svg]
+----
 @startuml
-!include <c4/C4_Component.puml>
+left to right direction
+skinparam componentStyle rectangle
 
-LAYOUT_WITH_LEGEND()
-
-title Component Diagram – SubscriptionGuard
-
-Container_Boundary(frontend, "Frontend (React + Vite)") {
-  Component(ui_forms, "UI-Formulare", "React", "Komponenten zum Anlegen/Bearbeiten von Abos")
-  Component(ui_dash, "Dashboard & Analyse", "Chart.js", "Visualisierung der monatlichen Kosten und Einsparpotenziale")
+package "Frontend\nReact + Vite" {
+  [App Shell + Router] as App
+  [Abo-UI] as SubUi
+  [Analyse-Dashboard] as AnalysisUi
+  [Budget-UI] as BudgetUi
+  [CSV-Import-Wizard] as ImportUi
+  [Notification Center] as NotificationUi
+  [Settings-UI] as SettingsUi
+  [Frontend API Client] as FeApi
 }
 
-Container_Boundary(backend, "Backend (Express + TypeScript)") {
-  Component(api_subs, "Abo-Router", "Express Route", "CRUD-Operationen für Subscriptions")
-  Component(api_import, "Import-Modul", "multer + csv-parse", "Erkennt wiederkehrende Muster in Kontoauszügen")
-  Component(api_analysis, "Analyse-Engine", "Express Route + SQL", "Berechnet Kosten-Normalisierung und Duplikate")
-  Component(job_cron, "Fristen-Management", "node-cron", "Täglicher Job um 06:00 Uhr zur Prüfung der Kündigungsfristen")
+package "Backend\nExpress + TypeScript" {
+  [Subscriptions Router] as SubApi
+  [Categories Router] as CatApi
+  [Analysis Router] as AnalysisApi
+  [Budget Router] as BudgetApi
+  [Import Router] as ImportApi
+  [Notifications Router] as NotificationApi
+  [Settings/Auth Middleware] as AuthApi
+  [Deadline Job] as DeadlineJob
+  [Push Service Adapter] as PushAdapter
 }
 
-Container_Boundary(persistence, "Datenschicht") {
-  ComponentDb(db, "PostgreSQL", "Supabase", "Speichert Nutzer, Abonnements, Budgets etc.")
+database "PostgreSQL / Supabase" as Db
+database "SQLite Dev" as Sqlite
+cloud "Supabase Auth" as Auth
+cloud "FCM / APNS / Web Push" as Push
+
+App --> SubUi
+App --> AnalysisUi
+App --> BudgetUi
+App --> ImportUi
+App --> NotificationUi
+App --> SettingsUi
+
+SubUi --> FeApi
+AnalysisUi --> FeApi
+BudgetUi --> FeApi
+ImportUi --> FeApi
+NotificationUi --> FeApi
+SettingsUi --> FeApi
+
+FeApi --> SubApi : /api/subscriptions
+FeApi --> CatApi : /api/categories
+FeApi --> AnalysisApi : /api/analysis
+FeApi --> BudgetApi : /api/budget
+FeApi --> ImportApi : /api/import
+FeApi --> NotificationApi : /api/notifications
+
+AuthApi --> Auth
+SubApi --> Db
+CatApi --> Db
+AnalysisApi --> Db
+BudgetApi --> Db
+ImportApi --> Db
+NotificationApi --> Db
+DeadlineJob --> Db
+DeadlineJob --> PushAdapter
+PushAdapter --> Push
+SubApi ..> Sqlite : Dev-Modus
+@enduml
+----
+
+=== Frontend-Komponenten
+
+[plantuml,frontend-components,svg]
+----
+@startuml
+left to right direction
+skinparam componentStyle rectangle
+
+package "subscriptions (F1, F2, F5)" {
+  [SubscriptionList]
+  [SubscriptionCard]
+  [SubscriptionForm]
+  [CategorySelect]
+  [ContractFields]
+  [UsageRatingControl]
+  [DeleteSubscriptionDialog]
+  [PauseToggle]
 }
 
-Rel(ui_forms, api_subs, "POST /api/subscriptions", "JSON")
-Rel(ui_dash, api_analysis, "GET /api/analysis", "JSON")
-Rel(api_import, db, "schreibt", "SQL")
-Rel(api_subs, db, "schreibt/liest", "SQL")
-Rel(api_analysis, db, "aggregiert Daten", "SQL")
-Rel(job_cron, db, "prüft Fristen", "SQL")
+package "analysis (F3, F5, UC3)" {
+  [AnalysisDashboard]
+  [CostSummaryCards]
+  [CategoryCostChart]
+  [CostTrendChart]
+  [ForecastPanel]
+  [RecommendationList]
+  [SavingsPotentialPanel]
+}
 
+package "import-export (F6, UC4)" {
+  [CsvImportWizard]
+  [ImportCandidateList]
+  [ImportSummary]
+  [ExportMenu]
+}
+
+package "budget (F7, UC5)" {
+  [BudgetForm]
+  [BudgetProgress]
+  [BudgetWarning]
+  [SavingsGoalForm]
+}
+
+package "notifications (F4, UC2)" {
+  [NotificationCenter]
+  [NotificationPermissionPrompt]
+  [NotificationList]
+}
+
+package "settings (F8)" {
+  [CurrencySelect]
+  [NotificationTimeSettings]
+  [BackupSyncPanel]
+}
+
+[SubscriptionForm] --> [CategorySelect]
+[SubscriptionForm] --> [ContractFields]
+[SubscriptionForm] --> [UsageRatingControl]
+[AnalysisDashboard] --> [CategoryCostChart]
+[AnalysisDashboard] --> [RecommendationList]
+[CsvImportWizard] --> [ImportCandidateList]
+[BudgetForm] --> [BudgetProgress]
 @enduml
-....
+----
 
----
+=== Backend-Komponenten
 
-== Wichtige Interaktionsflüsse
+[cols="1,2,3",options="header"]
+|===
+|Komponente |Technologie |Verantwortung
 
-Die folgenden Sequenzdiagramme zeigen die systemübergreifenden Abläufe für die wichtigsten Anwendungsfälle (Use Cases).
+|`subscriptions` Router
+|Express + TypeScript
+|Abo anlegen, listen, bearbeiten, loeschen, pausieren/fortsetzen. Validiert Eingaben und
+erzeugt Erinnerungen bei Fristen.
 
-=== Abo anlegen (PAP 1 / UC1)
+|`categories` Router
+|Express + TypeScript
+|Kategorien fuer Abo-Formulare und Auswertungen bereitstellen.
 
-_Dieser Fluss zeigt, wie ein neues Abonnement im System validiert und gespeichert wird, und wie sofort Erinnerungen eingeplant werden, falls eine Frist existiert [cite: 989-1008, 1435-1526]._
+|`analysis` Router
+|Express + SQL
+|Monatskosten normalisieren, nach Kategorien gruppieren, Duplikate und Einsparpotenzial
+berechnen.
 
-[plantuml, sequence-booking, svg]
-....
-@startuml
-skinparam monochrome true
-skinparam defaultFontSize 12
+|`budget` Router
+|Express + SQL
+|Monatsbudget setzen und Status `NO_BUDGET`, `WITHIN_BUDGET`, `OVER_BUDGET` liefern.
 
-actor "Nutzer:in" as user
-participant "Frontend\n(React)" as fe
-participant "Backend\n(Express)" as be
-participant "Datenbank\n(PostgreSQL)" as db
+|`import` Router
+|Express + multer + csv-parse
+|CSV-Dateien entgegennehmen, wiederkehrende Zahlungen erkennen und bestaetigte Kandidaten als
+Abos anlegen.
 
-user -> fe : Formular ausfüllen & absenden
-fe -> be : POST /api/subscriptions\n{name, cost, interval...}
-be -> be : Serverseitige Validierung
-alt Validierung fehlgeschlagen
-    be --> fe : 400 Bad Request (Errors)
-    fe --> user : Fehlermeldung anzeigen
-else Validierung erfolgreich
-    be -> db : INSERT INTO subscriptions...
-    db --> be : savedSubscription
-    opt Kündigungsfrist vorhanden
-        be -> db : INSERT INTO notifications (Reminder)
-    end
-    be --> fe : 201 Created
-    fe -> fe : Abo-Liste neu laden
-    fe --> user : Erfolgsmeldung & neue Liste
-end
-@enduml
-....
+|`notifications` Router
+|Express + SQL
+|Erinnerungen und Warnungen fuer das Frontend bereitstellen.
 
-=== Tägliche Fristenprüfung (PAP 2)
+|Deadline Job
+|node-cron
+|Taeglich faellige Kuendigungsfristen pruefen, Notifications erstellen und Push ausloesen.
 
-_Ein asynchroner Hintergrund-Prozess, der völlig ohne Nutzerinteraktion abläuft. Er ermittelt fällige Kündigungen effizient über eine SQL-Abfrage [cite: 1018-1022, 1529-1582]._
+|Push Service Adapter
+|FCM / APNS / Web Push
+|Provider-spezifische Push-Zustellung kapseln.
 
-[plantuml, sequence-deadline, svg]
-....
-@startuml
-skinparam monochrome true
-skinparam defaultFontSize 12
+|DB-Zugriff
+|pg-Treiber / Supabase Client / SQLite Dev
+|Prepared Statements, Connection Handling und Mapping von snake_case zu camelCase.
+|===
 
-participant "Cron Job\n(node-cron)" as cron
-participant "Datenbank\n(PostgreSQL)" as db
-participant "Push Service\n(FCM/APNS)" as push
+== Feature-Verantwortlichkeiten
 
-cron -> cron : Täglicher Timer (06:00)
-cron -> db : SELECT fällige Abos (Frist < 7 Tage & nicht gesendet)
-db --> cron : Liste fälliger Abos
-loop für jedes Abo in Liste
-    cron -> db : INSERT INTO notifications
-    db --> cron : notification_id
-    cron -> push : sendPush(userId, message)
-    push --> cron : OK
-    cron -> db : UPDATE notifications SET is_sent = true
-end
-@enduml
-....
+[cols="1,2,3,3",options="header"]
+|===
+|Feature |Deckt ab |Frontend |Backend / Daten
 
----
+|`subscriptions`
+|F1 Abo-Verwaltung, F2 Vertragsdaten, Teile von F5, UC1/PAP 1.
+|Liste, Detail, Formular, Kategorieauswahl, Fristen-/Vertragsfelder, Pause, Loeschen,
+Nutzungsbewertung.
+|`/api/subscriptions`, `/api/categories`, Tabellen `subscriptions`, `categories`.
+
+|`analysis`
+|F3 Kostenuebersicht, F5 Optimierung, UC3/PAP 3.
+|Kosten-Kacheln, Kategoriechart, Verlauf, Prognose, Empfehlungen.
+|`/api/analysis`, SQL-Aggregation ueber `subscriptions` und `categories`.
+
+|`import-export`
+|F6 CSV-Import, automatische Erkennung, PDF/CSV-Export, UC4/PAP 4.
+|Upload, Kandidatenliste, Bestaetigen/Verwerfen, Zusammenfassung, Export-Menue.
+|`/api/import/csv`, `/api/import/commit`, Export-Endpunkte.
+
+|`budget`
+|F7 Monatsbudget, Fortschritt, Sparziel, UC5/PAP 5.
+|Budgetformular, Fortschrittsbalken, Warnung, Sparziel.
+|`/api/budget/status`, `/api/budget`, Tabelle `budgets`.
+
+|`notifications`
+|F4 Erinnerungen/Warnungen, UC2/PAP 2.
+|Notification Center, Permission Prompt, Browser-Push-Anzeige.
+|`/api/notifications`, Tabelle `notifications`, Push Adapter, Deadline Job.
+
+|`settings`
+|F8 Waehrung, Benachrichtigungszeiten, Datensicherung.
+|Waehrungsauswahl, Reminder-Zeiten/Vorlauftage, Backup-/Sync-Panel.
+|Nutzerprofil in `users`, Auth-Kontext, optional Backup-/Export-Endpunkte.
+
+|`auth`
+|Login, Session und geschuetzte Bereiche.
+|Login, Logout, Session-Gate, geschuetzte Routen.
+|Supabase Auth oder Backend-Auth-Middleware.
+|===
+
+== Routenstruktur im Frontend
+
+[cols="1,2,3",options="header"]
+|===
+|Route |Seite |Inhalt
+
+|`/`
+|`DashboardPage`
+|Kostenueberblick, Budgetstatus, naechste Fristen und wichtigste Empfehlungen.
+
+|`/subscriptions`
+|`SubscriptionsPage`
+|Abo-Liste, Suche/Filter, Kategorien, Pausierungsstatus, Aktionen.
+
+|`/subscriptions/new`
+|`SubscriptionCreatePage`
+|UC1/PAP 1: Abo anlegen.
+
+|`/subscriptions/:id`
+|`SubscriptionDetailPage`
+|Abo bearbeiten, Vertragsdaten, Nutzungsbewertung, Zahlungen/Erinnerungen.
+
+|`/analysis`
+|`AnalysisPage`
+|UC3/PAP 3: Analyse-Dashboard mit Diagrammen und Empfehlungen.
+
+|`/import`
+|`ImportPage`
+|UC4/PAP 4: CSV-Import-Wizard.
+
+|`/budget`
+|`BudgetPage`
+|UC5/PAP 5: Monatsbudget, Fortschritt, Sparziel.
+
+|`/notifications`
+|`NotificationsPage`
+|F4/UC2: Erinnerungen und Warnungen.
+
+|`/settings`
+|`SettingsPage`
+|F8: Waehrung, Benachrichtigungszeiten, Backup/Sync.
+|===
 
 == Datenmodell
 
-Die technische Persistenzstruktur spiegelt das fachliche Domänenmodell 1:1 wider [cite: 21-126, 1268-1373]. Schreibweisen in der Datenbank folgen der `snake_case` Konvention.
+Die technische Persistenzstruktur spiegelt das fachliche Domaenenmodell wider. Die Datenbank
+verwendet snake_case, die API und TypeScript verwenden camelCase.
 
 === Datenbankmodell
 
-[plantuml, data-model, svg]
-....
+[plantuml,data-model,svg]
+----
 @startuml
-skinparam monochrome true
-skinparam defaultFontSize 12
+skinparam linetype ortho
 
 entity "users" as users {
   * id : SERIAL <<PK>>
@@ -182,7 +344,7 @@ entity "users" as users {
   * name : TEXT
   * email : TEXT <<UNIQUE>>
   * currency : TEXT
-  * monthly_budget : NUMERIC
+  monthly_budget : NUMERIC
   * notification_lead_days : INT
 }
 
@@ -200,12 +362,17 @@ entity "subscriptions" as subs {
   * user_id : INT <<FK>>
   * category_id : INT <<FK>>
   * name : TEXT
+  * provider : TEXT
   * cost : NUMERIC(10,2)
+  * currency : TEXT
   * interval : TEXT
   * start_date : DATE
   cancel_deadline : DATE
-  auto_renewal : BOOLEAN
-  is_paused : BOOLEAN
+  contract_end : DATE
+  * auto_renewal : BOOLEAN
+  * usage_rating : TEXT
+  * is_paused : BOOLEAN
+  * created_at : TIMESTAMPTZ
 }
 
 entity "payments" as payments {
@@ -217,6 +384,16 @@ entity "payments" as payments {
   * status : TEXT
 }
 
+entity "notifications" as notif {
+  * id : SERIAL <<PK>>
+  --
+  * subscription_id : INT <<FK>>
+  * type : TEXT
+  * trigger_date : DATE
+  * is_sent : BOOLEAN
+  * message : TEXT
+}
+
 entity "budgets" as budgets {
   * id : SERIAL <<PK>>
   --
@@ -225,79 +402,490 @@ entity "budgets" as budgets {
   * target_amount : NUMERIC
 }
 
-entity "notifications" as notif {
-  * id : SERIAL <<PK>>
-  --
-  * subscription_id : INT <<FK>>
-  * type : TEXT
-  * trigger_date : DATE
-  * is_sent : BOOLEAN
-}
-
-users ||--o{ subs : "besitzt"
-categories ||--o{ subs : "ordnet"
-users ||--o{ budgets : "definiert"
-subs ||--o{ payments : "verursacht"
-subs ||--o{ notif : "löst aus"
-
+users ||--o{ subs : besitzt
+categories ||--o{ subs : ordnet
+users ||--o{ budgets : definiert
+subs ||--o{ payments : erzeugt
+subs ||--o{ notif : loest_aus
 @enduml
-....
+----
 
 === Tabellenbeschreibung
 
-[cols="1,1,3", options="header"]
+[cols="1,1,3",options="header"]
 |===
-| Tabelle | Spalte | Beschreibung & Besonderheiten
+|Tabelle |Spalte |Beschreibung und Besonderheiten
 
-.3+| subscriptions
-| id | SERIAL als Primärschlüssel.
-| interval | [cite_start]Enum-Constraint über SQL CHECK: `'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'`[cite: 60, 71, 1307, 1318].
-| usage_rating | Subjektive Nutzung: `'OFTEN', 'RARELY', 'NEVER', 'NOT_RATED'`[cite: 76, 83, 1323, 1330].
+.5+|`subscriptions`
+|`id`
+|Primaerschluessel.
+|`interval`
+|Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
+|`usage_rating`
+|Nutzungsbewertung: `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
+|`cancel_deadline`
+|Datum, bis zu dem gekuendigt werden muss; Grundlage fuer PAP 2.
+|`is_paused`
+|Pausierte Abos werden bei Kostenanalyse und Fristenpruefung ignoriert.
 
-.2+| payments
-| status | [cite_start]Zahlungsstatus: `'PENDING', 'PAID', 'FAILED'`[cite: 95, 100, 1342, 1347].
-| subscription_id | Fremdschlüssel. [cite_start]Bei Löschung des Abos werden Zahlungen kaskadierend gelöscht (`ON DELETE CASCADE`)[cite: 97, 1344].
+.2+|`payments`
+|`status`
+|Zahlungsstatus: `PENDING`, `PAID`, `FAILED`.
+|`subscription_id`
+|Fremdschluessel; bei Loeschung eines Abos werden Zahlungen kaskadierend geloescht.
 
-.2+| budgets
-| target_amount | Das monatliche Ausgabeziel. Muss größer 0 sein[cite: 124, 1371].
-| user_id, month | [cite_start]UNIQUE Constraint auf die Kombination aus Nutzer und Monat, um Mehrfacheinträge zu vermeiden[cite: 125, 1372].
-|===
+.3+|`notifications`
+|`type`
+|Warnungsart, z.B. `CANCEL_DEADLINE_REMINDER`, `PAYMENT_REMINDER`, `BUDGET_WARNING`.
+|`trigger_date`
+|Datum, an dem die Erinnerung ausgeloest wird.
+|`is_sent`
+|Verhindert mehrfaches Senden derselben Erinnerung.
 
-== Eingesetzte Muster & Konventionen
-
-Um API-Vertragsbrüche (API Drift) zwischen Frontend und Backend zu vermeiden, wurde eine enge Kopplung der Datenstrukturen beschlossen [cite: 130-133, 1377-1380].
-
-=== Designmuster
-
-[cols="1,2,2", options="header"]
-|===
-| Muster | Wo eingesetzt | Begründung
-
-| Shared TypeScript-Types
-| `/shared/types.ts`
-| Frontend und Backend teilen sich dieselben Interface-Definitionen. Ändert sich das Datenmodell, schlägt der Build sofort fehl [cite: 130-183, 1377-1430].
-
-| Serverseitige Aggregation
-| `/api/analysis` (PAP 3)
-| Anstatt tausende Abos ans Frontend zu schicken und dort zu berechnen, summiert die Datenbank via `SUM()` und `CASE`-Statements die monatlichen Kosten extrem performant vor [cite: 340, 352-379, 1587, 1599-1626].
-
-| Thick Backend (Fat Controller)
-| `/api/import/csv` (PAP 4)
-| Die rechenintensive Mustererkennung von Kontoauszügen liegt komplett im Node.js-Backend, damit der Browser-Tab des Nutzers nicht einfriert[cite: 468, 1715].
+.2+|`budgets`
+|`target_amount`
+|Monatliches Ausgabeziel; muss groesser 0 sein.
+|`user_id`, `month`
+|Eindeutige Kombination, damit pro Nutzer und Monat nur ein Budget existiert.
 |===
 
-=== API-Konventionen
+=== Shared TypeScript-Types
 
-[cols="1,3", options="header"]
+[source,ts]
+----
+export type Currency = 'EUR' | 'USD' | 'CHF';
+export type Interval = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type UsageRating = 'OFTEN' | 'RARELY' | 'NEVER' | 'NOT_RATED';
+
+export interface Subscription {
+  id: number;
+  userId: number;
+  categoryId: number;
+  name: string;
+  provider: string;
+  cost: number;
+  currency: Currency;
+  interval: Interval;
+  startDate: string;
+  cancelDeadline: string | null;
+  contractEnd: string | null;
+  autoRenewal: boolean;
+  usageRating: UsageRating;
+  isPaused: boolean;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export type BudgetStatus =
+  | { status: 'NO_BUDGET' }
+  | { status: 'WITHIN_BUDGET'; spent: number; target: number; remaining: number }
+  | { status: 'OVER_BUDGET'; spent: number; target: number; overage: number };
+
+export interface AnalysisResponse {
+  totalMonthly: number;
+  yearlyTotal?: number;
+  savingsPotential: number;
+  byCategory: Array<{
+    categoryId: number;
+    categoryName: string;
+    monthlyCost: number;
+    subCount: number;
+  }>;
+  recommendations: string[];
+}
+----
+
+== REST-API-Konventionen
+
+[cols="1,3",options="header"]
 |===
-| Aspekt | Konvention
+|Aspekt |Konvention
 
-| URL-Struktur
-| Ressourcenorientiert im Plural (z.B. `/api/subscriptions`, `/api/categories`).
+|URL-Struktur
+|Ressourcenorientiert im Plural: `/api/subscriptions`, `/api/categories`, `/api/notifications`.
 
-| HTTP-Methoden
-| Einhaltung der REST-Prinzipien: `GET` (Liste/Analyse), `POST` (Anlegen/Import), `PATCH` (Bearbeiten), `DELETE` (Löschen).
+|HTTP-Methoden
+|`GET` fuer Listen/Analyse/Status, `POST` fuer Anlegen und Import, `PATCH` fuer Bearbeiten,
+`DELETE` fuer Loeschen, `PUT` fuer vollstaendiges Setzen wie Budget.
 
-| Prepared Statements
-| Bei *jedem* SQL-Query werden Variablen zwingend über `$1, $2` gebunden (z. B. `[req.user.id]`), um SQL-Injections vollständig auszuschließen [cite: 264-271, 696, 1511-1518, 1943].
+|Payloads
+|JSON fuer Standardfaelle, `FormData` fuer CSV-Upload.
+
+|Namenskonvention
+|API-Responses verwenden camelCase. Mapping von SQL snake_case passiert im Backend.
+
+|Fehlerformat
+|Validierungsfehler werden strukturiert zurueckgegeben, z.B. `{ errors: string[] }`.
+
+|SQL-Sicherheit
+|Alle SQL-Variablen werden ueber Prepared Statements gebunden.
 |===
+
+[cols="1,1,2,3",options="header"]
+|===
+|Methode |Pfad |Use Case |Funktion
+
+|POST |`/api/subscriptions` |UC1 / PAP 1 |Abo anlegen.
+|GET |`/api/subscriptions` |F1 |Alle Abos auflisten.
+|PATCH |`/api/subscriptions/:id` |F1 |Abo bearbeiten.
+|DELETE |`/api/subscriptions/:id` |F1 |Abo loeschen.
+|POST |`/api/subscriptions/:id/pause` |F1 |Abo pausieren oder fortsetzen.
+|GET |`/api/categories` |F1 |Kategorien laden.
+|GET |`/api/analysis` |UC3 / PAP 3 |Kostenanalyse und Empfehlungen.
+|POST |`/api/import/csv` |UC4 / PAP 4 |CSV hochladen und Vorschlaege erhalten.
+|POST |`/api/import/commit` |UC4 / PAP 4 |Vorschlaege bestaetigen und Abos anlegen.
+|GET |`/api/budget/status` |UC5 / PAP 5 |Budgetstatus laden.
+|PUT |`/api/budget` |UC5 / PAP 5 |Monatsbudget setzen.
+|GET |`/api/notifications` |F4 / UC2 |Erinnerungen abrufen.
+|===
+
+== Wichtige Interaktionsfluesse
+
+=== UC1/PAP 1: Abo anlegen
+
+[plantuml,sequence-create-subscription,svg]
+----
+@startuml
+actor "Nutzer:in" as User
+participant "Frontend\nSubscriptionForm" as FE
+participant "Backend\nSubscriptions Router" as BE
+database "Datenbank" as DB
+
+User -> FE : Formular ausfuellen und absenden
+FE -> FE : Client-Plausibilitaet pruefen
+FE -> BE : POST /api/subscriptions
+BE -> BE : Serverseitige Validierung
+alt Validierung fehlgeschlagen
+  BE --> FE : 400 { errors }
+  FE --> User : Fehlermeldungen anzeigen
+else Validierung erfolgreich
+  BE -> DB : INSERT INTO subscriptions
+  DB --> BE : savedSubscription
+  opt Kuendigungsfrist vorhanden
+    BE -> DB : INSERT INTO notifications
+  end
+  BE --> FE : 201 Subscription
+  FE -> FE : Liste invalidieren / neu laden
+  FE --> User : aktualisierte Abo-Liste
+end
+@enduml
+----
+
+=== UC2/PAP 2: Taegliche Fristenpruefung
+
+[plantuml,sequence-deadline-check,svg]
+----
+@startuml
+participant "Cron Job\nnode-cron" as Cron
+database "Datenbank" as DB
+participant "Push Adapter" as Push
+participant "Backend\nNotifications Router" as BE
+participant "Frontend\nNotification Center" as FE
+
+Cron -> Cron : Taeglicher Timer
+Cron -> DB : SELECT faellige Abos
+DB --> Cron : Liste faelliger Abos
+loop fuer jedes Abo
+  Cron -> DB : INSERT INTO notifications
+  Cron -> Push : sendPush(userId, message)
+  Push --> Cron : OK
+  Cron -> DB : UPDATE notifications SET is_sent = true
+end
+FE -> BE : GET /api/notifications
+BE -> DB : SELECT notifications
+DB --> BE : Notification[]
+BE --> FE : Notification[]
+FE --> FE : Erinnerungen anzeigen
+@enduml
+----
+
+=== UC3/PAP 3: Kostenanalyse
+
+[plantuml,sequence-analysis,svg]
+----
+@startuml
+actor "Nutzer:in" as User
+participant "Frontend\nAnalysisDashboard" as FE
+participant "Backend\nAnalysis Router" as BE
+database "Datenbank" as DB
+
+User -> FE : Analyse oeffnen
+FE -> BE : GET /api/analysis
+BE -> DB : Kosten normalisieren und nach Kategorien gruppieren
+DB --> BE : aggregierte Kosten
+BE -> DB : niedrige Nutzung / Duplikate pruefen
+DB --> BE : Empfehlungen-Daten
+BE --> FE : AnalysisResponse
+FE -> FE : Diagramme und Empfehlungen rendern
+FE --> User : Analyse-Dashboard anzeigen
+@enduml
+----
+
+=== UC4/PAP 4: CSV-Import
+
+[plantuml,sequence-csv-import,svg]
+----
+@startuml
+actor "Nutzer:in" as User
+participant "Frontend\nCsvImportWizard" as FE
+participant "Backend\nImport Router" as BE
+database "Datenbank" as DB
+
+User -> FE : CSV-Datei auswaehlen
+FE -> FE : Dateityp/Groesse oberflaechlich pruefen
+FE -> BE : POST /api/import/csv (FormData)
+BE -> BE : Datei parsen
+BE -> BE : Zahlungen nach Empfaenger gruppieren
+BE -> BE : wiederkehrende Muster erkennen
+alt Datei unlesbar
+  BE --> FE : 400 Fehler
+  FE --> User : Fehlermeldung anzeigen
+else Kandidaten gefunden
+  BE --> FE : candidates[]
+  FE --> User : Vorschlaege anzeigen
+  User -> FE : Kandidaten bestaetigen/verwerfen
+  FE -> BE : POST /api/import/commit
+  BE -> DB : INSERT bestaetigte Abos
+  BE --> FE : Zusammenfassung
+  FE --> User : Import-Zusammenfassung
+else keine Kandidaten
+  BE --> FE : leere Kandidatenliste
+  FE --> User : Keine Abos erkannt
+end
+@enduml
+----
+
+=== UC5/PAP 5: Budget setzen und ueberwachen
+
+[plantuml,sequence-budget,svg]
+----
+@startuml
+actor "Nutzer:in" as User
+participant "Frontend\nBudgetPage" as FE
+participant "Backend\nBudget Router" as BE
+database "Datenbank" as DB
+
+User -> FE : Budget oeffnen
+FE -> BE : GET /api/budget/status
+BE -> DB : Budget laden
+alt Kein Budget
+  BE --> FE : { status: "NO_BUDGET" }
+  FE --> User : Budget setzen anbieten
+else Budget vorhanden
+  BE -> DB : Monatskosten berechnen
+  alt Kosten > Budget
+    BE --> FE : OVER_BUDGET
+    FE --> User : roter Fortschritt + Warnung
+  else innerhalb Budget
+    BE --> FE : WITHIN_BUDGET
+    FE --> User : gruener Fortschritt + Restbetrag
+  end
+end
+
+User -> FE : Monatsbudget setzen
+FE -> BE : PUT /api/budget
+BE -> DB : UPSERT budget
+BE --> FE : gespeichertes Budget
+FE -> BE : Status neu laden
+@enduml
+----
+
+== Eingesetzte Muster und Konventionen
+
+[cols="1,2,3",options="header"]
+|===
+|Muster |Wo eingesetzt |Begruendung
+
+|Shared TypeScript-Types
+|`/shared/types.ts`
+|Frontend und Backend teilen Interface-Definitionen. Aenderungen am Datenmodell werden beim
+Build sichtbar.
+
+|Feature-orientierte Frontend-Module
+|`frontend/src/features/*`
+|Fachliche Bereiche wie Abos, Analyse, Budget und Import bleiben zusammenhaengend wartbar.
+
+|API Client Facade
+|`frontend/src/shared/api/*`
+|Komponenten rufen keine rohen `fetch`-Calls auf. Fehlerbehandlung und Typisierung bleiben
+konsistent.
+
+|Serverseitige Aggregation
+|`GET /api/analysis`
+|Kosten werden per SQL `SUM` und `CASE` normalisiert, statt alle Rohdaten im Frontend zu
+berechnen.
+
+|Backend fuer Import-Erkennung
+|`POST /api/import/csv`
+|CSV-Mustererkennung kann rechenintensiv sein und laeuft stabiler im Backend.
+
+|Scheduler
+|`deadlineCheck`
+|PAP 2 laeuft ohne Nutzerinteraktion taeglich automatisch.
+
+|Adapter
+|Push Service, Auth, DB-Zugriff
+|Provider-spezifische Details bleiben gekapselt.
+
+|Discriminated Union
+|`BudgetStatus`
+|Das Frontend muss alle Budgetzustaende explizit behandeln.
+|===
+
+== UI-Zustaende
+
+[cols="1,3,3",options="header"]
+|===
+|Zustand |Wann |Darstellung
+
+|Loading
+|API-Daten werden geladen.
+|Skeletons oder kompakte Ladeindikatoren pro Bereich.
+
+|Empty
+|Keine Abos, keine Analyse, keine Import-Kandidaten oder kein Budget.
+|Kurzer Empty State mit passender Primaeraktion.
+
+|Validation Error
+|Client- oder Backend-Validierung meldet Probleme.
+|Fehler nahe am Feld; globale Fehlermeldung nur fuer formularweite Probleme.
+
+|Permission Required
+|Browser Notifications sind noch nicht erlaubt.
+|Kontextbezogener Prompt im Notification-Bereich.
+
+|Offline/API Error
+|REST API nicht erreichbar oder Antwort fehlerhaft.
+|Retry-Aktion und Daten nicht stillschweigend verwerfen.
+
+|Over Budget
+|Budgetstatus ist `OVER_BUDGET`.
+|Roter Fortschrittsbalken, konkreter Betrag der Ueberschreitung.
+|===
+
+== Traceability-Matrix
+
+[cols="1,3,3",options="header"]
+|===
+|Anforderung |Design-Abdeckung |Nachweis
+
+|F1 Abo-Verwaltung
+|CRUD, Pause, Kategorie, Abo-Liste und Formular.
+|`subscriptions` Feature, `/api/subscriptions`, UC1.
+
+|F2 Fristen- und Vertragsmanagement
+|Kuendigungsfrist, Vertragsende, Auto-Renewal, Deadline Job.
+|`ContractFields`, `subscriptions.cancel_deadline`, PAP 2.
+
+|F3 Kostenuebersicht und Statistiken
+|Kennzahlen, Kategoriechart, Verlauf, Prognose.
+|`analysis` Feature, `/api/analysis`, UC3.
+
+|F4 Erinnerungs- und Warnsystem
+|Notification Center, Push Adapter, gespeicherte Notifications.
+|`notifications` Feature, Tabelle `notifications`, UC2.
+
+|F5 Analyse und Optimierung
+|Nutzungsbewertung, Empfehlungen, Einsparpotenzial, doppelte Abos.
+|`usage_rating`, Analyse-Engine, `RecommendationList`.
+
+|F6 Import und Export
+|CSV-Upload, Kandidatenpruefung, Export-Menue.
+|`import-export` Feature, `/api/import/*`, UC4.
+
+|F7 Budgetverwaltung
+|Monatsbudget, Fortschritt, Warnung, Sparziel.
+|`budget` Feature, Tabelle `budgets`, UC5.
+
+|F8 Einstellungen
+|Waehrung, Benachrichtigungszeiten, Datensicherung.
+|`settings` Feature, `users.currency`, `notification_lead_days`.
+
+|PAP 1
+|Abo anlegen mit Validierung und Liste aktualisieren.
+|Sequenzdiagramm UC1.
+
+|PAP 2
+|Taeglicher Fristenjob und Push.
+|Sequenzdiagramm UC2.
+
+|PAP 3
+|Kostenanalyse und Dashboard.
+|Sequenzdiagramm UC3.
+
+|PAP 4
+|CSV-Import und Kandidatenbestaetigung.
+|Sequenzdiagramm UC4.
+
+|PAP 5
+|Budgetstatus berechnen und farbig anzeigen.
+|Sequenzdiagramm UC5.
+|===
+
+== Empfohlene Code-Struktur
+
+[source,text]
+----
+subscriptionguard/
+  frontend/
+    src/
+      app/
+        App.tsx
+        routes.tsx
+        MainLayout.tsx
+      features/
+        subscriptions/
+        analysis/
+        budget/
+        import-export/
+        notifications/
+        settings/
+        auth/
+      shared/
+        api/
+        domain/
+        ui/
+        browser/
+  backend/
+    src/
+      routes/
+        subscriptions.ts
+        categories.ts
+        analysis.ts
+        budget.ts
+        import.ts
+        notifications.ts
+      services/
+        notifications.ts
+        push.ts
+        analysis.ts
+      jobs/
+        deadlineCheck.ts
+      db/
+        index.ts
+        migrations/
+  shared/
+    types.ts
+----
+
+== Umsetzungsreihenfolge
+
+1. Monorepo mit `frontend`, `backend` und `shared` einrichten.
+2. Shared Types fuer `Subscription`, `Category`, `BudgetStatus`, `AnalysisResponse` anlegen.
+3. Datenbankmigrationen fuer `users`, `categories`, `subscriptions`, `payments`,
+   `notifications`, `budgets` erstellen.
+4. Express-Grundgeruest mit Auth-Middleware, Error-Middleware und CORS konfigurieren.
+5. React App Shell, Routing und Hauptnavigation bauen.
+6. F1/F2: Abo-Verwaltung inklusive Formular, Liste, Kategorien, Fristenfelder.
+7. F7: Budgetstatus und Budgetformular.
+8. F3/F5: Analyse-Dashboard mit Chart.js und Empfehlungen.
+9. F6: CSV-Import-Wizard und spaeter Export.
+10. F4: Deadline Job, Notifications API, Notification Center und optional Browser Push.
+11. F8: Settings fuer Waehrung, Reminder-Vorlauftage und Backup/Sync.
+12. Tests fuer Domaenenfunktionen, API-Fehler, Budgetstatus, Import-Erkennung und zentrale
+    Komponenten ergaenzen.
