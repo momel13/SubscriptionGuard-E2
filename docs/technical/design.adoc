@@ -1,23 +1,12 @@
-= Softwaredesign: {project-name}
-Vorname Nachname <email@domain.org>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
-{localdatetime}
-include::../_includes/default-attributes.inc.adoc[]
-// Platzhalter für weitere Dokumenten-Attribute
 
-_Dieses Dokument beschreibt die interne Struktur des Systems, wie der Code organisiert ist,
-aus welchen Komponenten das System besteht, wie diese zusammenarbeiten, und welche
-Designmuster eingesetzt werden. Der Fokus liegt auf dem *Wie* der Implementierung._
 
-_Das Systemkontext-Diagramm und die Architekturentscheidungen (ADRs) sind im
-link:architecture.adoc[Architekturdokument] (`architecture.adoc`) beschrieben. Dieses Dokument vertieft die interne Sicht. Das Datenmodell hier beschreibt die technische Struktur der Persistenz. Die fachliche Bedeutung der Entitäten ist im link:domain_glossary.adoc[Domänenmodell] (`domain_glossary.adoc`) definiert._
+_Dieses Dokument beschreibt die interne Struktur des Systems, wie der Code organisiert ist, aus welchen Komponenten das System besteht, wie diese zusammenarbeiten, und welche Designmuster eingesetzt werden. Der Fokus liegt auf dem *Wie* der Implementierung._
 
 ---
 
 == Systemübersicht & Schichtenarchitektur
 
-_Dieser Abschnitt beschreibt, in welche Schichten oder Bereiche das System aufgeteilt ist
-und welche Verantwortung jede Schicht trägt. Eine klare Schichtentrennung verhindert,
-dass Geschäftslogik, Datenzugriff und Präsentation unkontrolliert vermischt werden._
+Das System folgt einer klaren 3-Schichten-Architektur (plus externe Dienste), um Benutzeroberfläche, Geschäftslogik und Datenhaltung sauber voneinander zu trennen .
 
 === Schichtendiagramm
 
@@ -28,21 +17,19 @@ skinparam monochrome true
 skinparam defaultFontSize 13
 skinparam rectangleBorderThickness 1
 
-rectangle "Präsentationsschicht\n(Frontend / API-Controller)" as presentation
-rectangle "Anwendungsschicht\n(Services / Use Cases)" as application
-rectangle "Domänenschicht\n(Entitäten / Geschäftslogik)" as domain
-rectangle "Persistenzschicht\n(Repositories / Datenbank)" as persistence
+rectangle "Präsentationsschicht\n(React, Chart.js)" as presentation
+rectangle "Logikschicht\n(Node.js, Express, node-cron)" as logic
+rectangle "Datenschicht\n(PostgreSQL, Supabase, SQLite)" as persistence
+rectangle "Externe Dienste\n(FCM/APNS, Supabase Auth)" as external
 
-presentation -down-> application : ruft auf
-application -down-> domain : verwendet
-application -down-> persistence : liest / schreibt
-domain -[hidden]down- persistence
+presentation -down-> logic : REST / JSON
+logic -down-> persistence : SQL / pg-Treiber
+logic -right-> external : HTTPS
+presentation -right-> external : JWT / Token
 
-note right of presentation : HTTP-Anfragen,\nSerialisierung, Routing
-note right of application : Koordination,\nTransaktionen
-note right of domain : Fachliche Regeln,\nValidierung
-note right of persistence : Datenbankzugriff,\nMapping
-
+note right of presentation : User Interface,\nDiagramme, Push-Anzeige
+note right of logic : Abo-Management, Fristen-Job,\nCSV-Parsing, Analyse-Engine
+note right of persistence : Tabellen, Indizes,\nPrepared Statements
 @enduml
 ....
 
@@ -52,136 +39,71 @@ note right of persistence : Datenbankzugriff,\nMapping
 |===
 | Schicht | Verantwortung | Darf abhängen von
 
-| Präsentationsschicht
-| HTTP-Anfragen entgegennehmen und beantworten;
-  Eingaben validieren; Antworten serialisieren;
-  Routing und Fehlerbehandlung auf API-Ebene
-| Anwendungsschicht
+| Präsentationsschicht (Frontend)
+| UI rendern, lokales State-Management, Diagramme zeichnen (Chart.js), API-Calls absetzen[cite: 6, 1253].
+| Logikschicht (REST-API)
 
-| Anwendungsschicht
-| Fachliche Abläufe koordinieren (Use Cases);
-  Transaktionen verwalten; externe Dienste aufrufen;
-  zwischen Schichten vermitteln
-| Domänenschicht, Persistenzschicht
+| Logikschicht (Backend)
+| Routing, Eingabevalidierung, Aggregation der Daten, CSV-Parsing und periodische Cron-Jobs (Fristenprüfung)[cite: 6, 1253].
+| Datenschicht, Externe Dienste
 
-| Domänenschicht
-| Fachliche Entitäten und Regeln kapseln;
-  Invarianten sicherstellen;
-  Kernlogik unabhängig von Infrastruktur halten
+| Datenschicht (Datenbank)
+| Persistente Speicherung der Nutzer, Abos, Budgets und Kategorien. Absicherung der Datenintegrität durch SQL-Constraints [cite: 6, 21-25, 1253, 1268-1272].
 | Keine äußeren Schichten
 
-| Persistenzschicht
-| Datenbankzugriff abstrahieren;
-  Entitäten auf Datenbankstrukturen mappen;
-  Abfragelogik kapseln
-| Domänenschicht (Entitäten)
+| Externe Dienste
+| Delegierung von standardisierten Aufgaben wie Authentifizierung (Supabase Auth) und Push-Notifications[cite: 6, 1253].
+| -
 |===
-
-NOTE: Die Domänenschicht darf *nicht* von Persistenz- oder Präsentationsschicht
-abhängen. Diese Regel ist der häufigste Architekturverstoss in Studentenprojekten
-und sollte in Code Reviews explizit geprüft werden.
 
 == Komponentenübersicht
 
-_Dieser Abschnitt beschreibt die wichtigsten Komponenten des Systems — Module,
-Pakete oder Services — und ihre Verantwortlichkeiten. Eine Komponente ist eine
-zusammengehörige Einheit von Code mit einer klar definierten Aufgabe._
-
 === Komponentendiagramm
 
-//Beipielhaftes Komponentendiagramm, das die Hauptkomponenten und ihre Schnittstellen zeigt
-//Die tatsächlichen Komponenten müssen auf das konkrete Projekt zugeschnitten sein
 [plantuml, component-diagram, svg]
 ....
 @startuml
-
-' source: https://github.com/plantuml-stdlib/C4-PlantUML
-' C4 Model
 !include <c4/C4_Component.puml>
 
 LAYOUT_WITH_LEGEND()
 
-title Component Diagram – [Systemname]
+title Component Diagram – SubscriptionGuard
 
-Container_Boundary(frontend, "Frontend") {
-  Component(booking_ui, "Buchungskomponente", "z. B. React / Angular", "Ermöglicht Nutzern das Erstellen und Verwalten von Buchungen")
-  Component(auth_ui, "Authentifizierungskomponente", "z. B. React / Angular", "Handhabt Login, Logout und Session-Management")
-  Component(shared_ui, "Gemeinsame UI-Komponenten", "z. B. Design System", "Wiederverwendbare UI-Elemente wie Buttons, Formulare, Navigation")
+Container_Boundary(frontend, "Frontend (React + Vite)") {
+  Component(ui_forms, "UI-Formulare", "React", "Komponenten zum Anlegen/Bearbeiten von Abos")
+  Component(ui_dash, "Dashboard & Analyse", "Chart.js", "Visualisierung der monatlichen Kosten und Einsparpotenziale")
 }
 
-Container_Boundary(backend, "Backend") {
-  Component(booking_ctrl, "Buchungs-Controller", "z. B. REST Controller", "Nimmt eingehende Buchungsanfragen entgegen und delegiert an den Service")
-  Component(booking_svc, "Buchungs-Service", "z. B. Spring Service", "Enthält die Buchungslogik und orchestriert Repository und Benachrichtigung")
-  Component(user_svc, "Nutzer-Service", "z. B. Spring Service", "Verwaltung von Nutzerdaten und Authentifizierungslogik")
-  Component(notification_svc, "Benachrichtigungs-Service", "z. B. Spring Service", "Erstellt und versendet Benachrichtigungen an Nutzer:innen")
+Container_Boundary(backend, "Backend (Express + TypeScript)") {
+  Component(api_subs, "Abo-Router", "Express Route", "CRUD-Operationen für Subscriptions")
+  Component(api_import, "Import-Modul", "multer + csv-parse", "Erkennt wiederkehrende Muster in Kontoauszügen")
+  Component(api_analysis, "Analyse-Engine", "Express Route + SQL", "Berechnet Kosten-Normalisierung und Duplikate")
+  Component(job_cron, "Fristen-Management", "node-cron", "Täglicher Job um 06:00 Uhr zur Prüfung der Kündigungsfristen")
 }
 
-Container_Boundary(persistence, "Persistenz") {
-  Component(booking_repo, "Buchungs-Repository", "z. B. JPA Repository", "Datenzugriff für Buchungsentitäten")
-  Component(user_repo, "Nutzer-Repository", "z. B. JPA Repository", "Datenzugriff für Nutzerentitäten")
-  ContainerDb(db, "Datenbank", "z. B. PostgreSQL", "Persistente Datenhaltung für alle Entitäten")
+Container_Boundary(persistence, "Datenschicht") {
+  ComponentDb(db, "PostgreSQL", "Supabase", "Speichert Nutzer, Abonnements, Budgets etc.")
 }
 
-System_Ext(ext, "Externer E-Mail-Dienst", "Zustellung von E-Mail-Benachrichtigungen, z. B. via SMTP")
-
-Rel(booking_ui, booking_ctrl, "sendet Buchungsanfragen", "REST / HTTPS")
-Rel(auth_ui, user_svc, "authentifiziert Nutzer:in", "REST / HTTPS")
-Rel(booking_ctrl, booking_svc, "delegiert an", "Java API")
-Rel(booking_svc, booking_repo, "liest / schreibt Buchungen", "JPA")
-Rel(booking_svc, notification_svc, "löst Benachrichtigung aus", "Java API")
-Rel(user_svc, user_repo, "liest / schreibt Nutzerdaten", "JPA")
-Rel(booking_repo, db, "persistiert Daten", "SQL")
-Rel(user_repo, db, "persistiert Daten", "SQL")
-Rel(notification_svc, ext, "sendet E-Mails über", "SMTP")
+Rel(ui_forms, api_subs, "POST /api/subscriptions", "JSON")
+Rel(ui_dash, api_analysis, "GET /api/analysis", "JSON")
+Rel(api_import, db, "schreibt", "SQL")
+Rel(api_subs, db, "schreibt/liest", "SQL")
+Rel(api_analysis, db, "aggregiert Daten", "SQL")
+Rel(job_cron, db, "prüft Fristen", "SQL")
 
 @enduml
 ....
-
-=== Komponentenbeschreibung
-
-[cols="1,2,2", options="header"]
-|===
-| Komponente | Verantwortung | Schnittstellen
-
-| [z. B. Buchungs-Controller]
-| HTTP-Anfragen für Buchungsvorgänge entgegennehmen;
-  Eingaben validieren; Antworten zurückgeben
-| REST-API (eingehend); Buchungs-Service (ausgehend)
-
-| [z. B. Buchungs-Service]
-| Buchungslogik koordinieren; Verfügbarkeit prüfen;
-  Transaktionen verwalten; Benachrichtigungen auslösen
-| Buchungs-Repository; Benachrichtigungs-Service
-
-| [z. B. Buchungs-Repository]
-| Buchungsdaten lesen und schreiben;
-  Datenbankabfragen kapseln
-| Datenbank (JPA / SQL)
-
-| [z. B. Benachrichtigungs-Service]
-| E-Mail-Benachrichtigungen versenden;
-  Vorlagen verwalten
-| Externer SMTP-Dienst
-
-| [Weitere Komponente]
-| [Verantwortung]
-| [Schnittstellen]
-|===
 
 ---
 
 == Wichtige Interaktionsflüsse
 
-Sequenzdiagramme zeigen, wie Komponenten bei typischen Abläufen zusammenarbeiten.
-Dokumentiert werden hier nur die wichtigsten und komplexesten Flüsse —
-nicht jede einfache CRUD-Operation.
+Die folgenden Sequenzdiagramme zeigen die systemübergreifenden Abläufe für die wichtigsten Anwendungsfälle (Use Cases).
 
-=== [Flussname, z. B. Raum buchen]
+=== Abo anlegen (PAP 1 / UC1)
 
-_Beschreibe kurz, was dieser Ablauf zeigt und warum er dokumentiert wird._
-
-//Beispielhaftes Sequenzdiagramm für den Buchungsprozess
-//Die tatsächlichen Flüsse müssen auf das konkrete Projekt zugeschnitten sein
+_Dieser Fluss zeigt, wie ein neues Abonnement im System validiert und gespeichert wird, und wie sofort Erinnerungen eingeplant werden, falls eine Frist existiert [cite: 989-1008, 1435-1526]._
 
 [plantuml, sequence-booking, svg]
 ....
@@ -190,68 +112,63 @@ skinparam monochrome true
 skinparam defaultFontSize 12
 
 actor "Nutzer:in" as user
-participant "Buchungs-\nController" as ctrl
-participant "Buchungs-\nService" as svc
-participant "Buchungs-\nRepository" as repo
-participant "Benachrichtigungs-\nService" as notify
+participant "Frontend\n(React)" as fe
+participant "Backend\n(Express)" as be
+participant "Datenbank\n(PostgreSQL)" as db
 
-user -> ctrl : POST /buchungen\n{raumId, zeitraum}
-ctrl -> ctrl : Eingabe validieren
-ctrl -> svc : buchungErstellen(raumId, zeitraum, nutzerId)
-svc -> repo : istVerfuegbar(raumId, zeitraum)
-repo --> svc : true
-svc -> repo : buchungSpeichern(buchung)
-repo --> svc : gespeicherteBuchung
-svc -> notify : bestaetigungSenden(buchung)
-notify --> svc : OK
-svc --> ctrl : buchung
-ctrl --> user : 201 Created\n{buchungsId, details}
-
+user -> fe : Formular ausfüllen & absenden
+fe -> be : POST /api/subscriptions\n{name, cost, interval...}
+be -> be : Serverseitige Validierung
+alt Validierung fehlgeschlagen
+    be --> fe : 400 Bad Request (Errors)
+    fe --> user : Fehlermeldung anzeigen
+else Validierung erfolgreich
+    be -> db : INSERT INTO subscriptions...
+    db --> be : savedSubscription
+    opt Kündigungsfrist vorhanden
+        be -> db : INSERT INTO notifications (Reminder)
+    end
+    be --> fe : 201 Created
+    fe -> fe : Abo-Liste neu laden
+    fe --> user : Erfolgsmeldung & neue Liste
+end
 @enduml
 ....
 
----
+=== Tägliche Fristenprüfung (PAP 2)
 
-=== [Weiterer Fluss, z. B. Fehlerfall: Raum nicht verfügbar]
+_Ein asynchroner Hintergrund-Prozess, der völlig ohne Nutzerinteraktion abläuft. Er ermittelt fällige Kündigungen effizient über eine SQL-Abfrage [cite: 1018-1022, 1529-1582]._
 
-[plantuml, sequence-conflict, svg]
+[plantuml, sequence-deadline, svg]
 ....
 @startuml
 skinparam monochrome true
 skinparam defaultFontSize 12
 
-actor "Nutzer:in" as user
-participant "Buchungs-\nController" as ctrl
-participant "Buchungs-\nService" as svc
-participant "Buchungs-\nRepository" as repo
+participant "Cron Job\n(node-cron)" as cron
+participant "Datenbank\n(PostgreSQL)" as db
+participant "Push Service\n(FCM/APNS)" as push
 
-user -> ctrl : POST /buchungen\n{raumId, zeitraum}
-ctrl -> svc : buchungErstellen(raumId, zeitraum, nutzerId)
-svc -> repo : istVerfuegbar(raumId, zeitraum)
-repo --> svc : false
-svc --> ctrl : RaumNichtVerfuegbarException
-ctrl --> user : 409 Conflict\n{message, alternativen}
-
+cron -> cron : Täglicher Timer (06:00)
+cron -> db : SELECT fällige Abos (Frist < 7 Tage & nicht gesendet)
+db --> cron : Liste fälliger Abos
+loop für jedes Abo in Liste
+    cron -> db : INSERT INTO notifications
+    db --> cron : notification_id
+    cron -> push : sendPush(userId, message)
+    push --> cron : OK
+    cron -> db : UPDATE notifications SET is_sent = true
+end
 @enduml
 ....
-
-NOTE: Flussnamen im Diagramm sollten identisch mit den Methodennamen im Code sein.
-Das macht es einfacher, vom Diagramm zum Code zu navigieren und umgekehrt.
 
 ---
 
 == Datenmodell
 
-_Dieser Abschnitt beschreibt die technische Datenbankstruktur: Tabellen, Spalten,
-Datentypen und Beziehungen. Er beantwortet die Frage: Wie werden die Daten gespeichert?_
-
-NOTE: Die *fachliche* Bedeutung der Entitäten — was sie repräsentieren und wie sie sich zueinander verhalten — ist im Domänenmodell (`domain_glossary.adoc`) beschrieben.
-Dieses Dokument zeigt ausschließlich die technische Persistenzstruktur.
+Die technische Persistenzstruktur spiegelt das fachliche Domänenmodell 1:1 wider [cite: 21-126, 1268-1373]. Schreibweisen in der Datenbank folgen der `snake_case` Konvention.
 
 === Datenbankmodell
-
-//beispielhaftes ER-Diagramm für das Datenmodell
-//Die tatsächlichen Tabellen und Spalten müssen auf das konkrete Projekt zugeschnitten sein
 
 [plantuml, data-model, svg]
 ....
@@ -259,35 +176,69 @@ Dieses Dokument zeigt ausschließlich die technische Persistenzstruktur.
 skinparam monochrome true
 skinparam defaultFontSize 12
 
-entity "nutzer" as user {
-  * id : UUID <<PK>>
+entity "users" as users {
+  * id : SERIAL <<PK>>
   --
-  * email : VARCHAR(255) <<UNIQUE>>
-  * name : VARCHAR(100)
-  * erstellt_am : TIMESTAMP
+  * name : TEXT
+  * email : TEXT <<UNIQUE>>
+  * currency : TEXT
+  * monthly_budget : NUMERIC
+  * notification_lead_days : INT
 }
 
-entity "raum" as room {
-  * id : UUID <<PK>>
+entity "categories" as categories {
+  * id : SERIAL <<PK>>
   --
-  * bezeichnung : VARCHAR(100)
-  * kapazitaet : INTEGER
-  * standort : VARCHAR(100)
+  * name : TEXT <<UNIQUE>>
+  icon : TEXT
+  color : TEXT
 }
 
-entity "buchung" as booking {
-  * id : UUID <<PK>>
+entity "subscriptions" as subs {
+  * id : SERIAL <<PK>>
   --
-  * nutzer_id : UUID <<FK>>
-  * raum_id : UUID <<FK>>
-  * beginn : TIMESTAMP
-  * ende : TIMESTAMP
-  * status : VARCHAR(20)
-  * erstellt_am : TIMESTAMP
+  * user_id : INT <<FK>>
+  * category_id : INT <<FK>>
+  * name : TEXT
+  * cost : NUMERIC(10,2)
+  * interval : TEXT
+  * start_date : DATE
+  cancel_deadline : DATE
+  auto_renewal : BOOLEAN
+  is_paused : BOOLEAN
 }
 
-user ||--o{ booking : "gibt auf"
-room ||--o{ booking : "ist Gegenstand von"
+entity "payments" as payments {
+  * id : SERIAL <<PK>>
+  --
+  * subscription_id : INT <<FK>>
+  * date : DATE
+  * amount : NUMERIC
+  * status : TEXT
+}
+
+entity "budgets" as budgets {
+  * id : SERIAL <<PK>>
+  --
+  * user_id : INT <<FK>>
+  * month : DATE
+  * target_amount : NUMERIC
+}
+
+entity "notifications" as notif {
+  * id : SERIAL <<PK>>
+  --
+  * subscription_id : INT <<FK>>
+  * type : TEXT
+  * trigger_date : DATE
+  * is_sent : BOOLEAN
+}
+
+users ||--o{ subs : "besitzt"
+categories ||--o{ subs : "ordnet"
+users ||--o{ budgets : "definiert"
+subs ||--o{ payments : "verursacht"
+subs ||--o{ notif : "löst aus"
 
 @enduml
 ....
@@ -298,50 +249,23 @@ room ||--o{ booking : "ist Gegenstand von"
 |===
 | Tabelle | Spalte | Beschreibung & Besonderheiten
 
-.4+| nutzer
-| id | UUID als Primärschlüssel; wird vom System generiert
-| email | Eindeutig; wird für Login und Benachrichtigungen verwendet
-| name | Anzeigename; kein Pflichtfeld nach DSGVO-Anforderung
-| erstellt_am | Automatisch gesetzt; nicht änderbar
+.3+| subscriptions
+| id | SERIAL als Primärschlüssel.
+| interval | [cite_start]Enum-Constraint über SQL CHECK: `'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'`[cite: 60, 71, 1307, 1318].
+| usage_rating | Subjektive Nutzung: `'OFTEN', 'RARELY', 'NEVER', 'NOT_RATED'`[cite: 76, 83, 1323, 1330].
 
-.4+| buchung
-| id | UUID als Primärschlüssel
-| status | Enum-Werte: `AKTIV`, `STORNIERT`, `ABGELAUFEN`
-| beginn / ende | Beide Zeitpunkte inklusive; keine Überschneidung per DB-Constraint
-| nutzer_id / raum_id | Fremdschlüssel; kein Cascade Delete — Buchungen bleiben erhalten
+.2+| payments
+| status | [cite_start]Zahlungsstatus: `'PENDING', 'PAID', 'FAILED'`[cite: 95, 100, 1342, 1347].
+| subscription_id | Fremdschlüssel. [cite_start]Bei Löschung des Abos werden Zahlungen kaskadierend gelöscht (`ON DELETE CASCADE`)[cite: 97, 1344].
 
-| [Weitere Tabelle]
-| [Spalte]
-| [Beschreibung]
-|===
-
-=== Datenbankmigrationen
-
-_Schemaänderungen werden nicht manuell durchgeführt, sondern über Migrationsskripte
-versioniert. So ist der Datenbankzustand jederzeit reproduzierbar._
-
-[cols="1,3", options="header"]
-|===
-| Aspekt | Beschreibung
-
-| Werkzeug
-| [z. B. Flyway / Liquibase]
-
-| Speicherort
-| [z. B. `src/main/resources/db/migration/`]
-
-| Namenskonvention
-| [z. B. `V001__initiales_schema.sql`, `V002__buchung_status_spalte.sql`]
-
-| Regel
-| Bestehende Migrationsskripte werden *nie* verändert — nur neue hinzugefügt
+.2+| budgets
+| target_amount | Das monatliche Ausgabeziel. Muss größer 0 sein[cite: 124, 1371].
+| user_id, month | [cite_start]UNIQUE Constraint auf die Kombination aus Nutzer und Monat, um Mehrfacheinträge zu vermeiden[cite: 125, 1372].
 |===
 
 == Eingesetzte Muster & Konventionen
 
-_Dieser Abschnitt dokumentiert übergreifende Designmuster und Konventionen, die im
-gesamten Codebase gelten. Das verhindert, dass verschiedene Teammitglieder dasselbe
-Problem auf unterschiedliche Weise lösen._
+Um API-Vertragsbrüche (API Drift) zwischen Frontend und Backend zu vermeiden, wurde eine enge Kopplung der Datenstrukturen beschlossen [cite: 130-133, 1377-1380].
 
 === Designmuster
 
@@ -349,47 +273,17 @@ Problem auf unterschiedliche Weise lösen._
 |===
 | Muster | Wo eingesetzt | Begründung
 
-| Repository Pattern
-| Persistenzschicht: alle Datenbankzugriffe
-| Datenbanklogik von Geschäftslogik trennen;
-  einfacher austauschbar und testbar
+| Shared TypeScript-Types
+| `/shared/types.ts`
+| Frontend und Backend teilen sich dieselben Interface-Definitionen. Ändert sich das Datenmodell, schlägt der Build sofort fehl [cite: 130-183, 1377-1430].
 
-| DTO (Data Transfer Object)
-| Schnittstelle zwischen Controller und Service
-| Interne Domänenobjekte nicht direkt exponieren;
-  API-Struktur unabhängig vom Datenbankmodell
+| Serverseitige Aggregation
+| `/api/analysis` (PAP 3)
+| Anstatt tausende Abos ans Frontend zu schicken und dort zu berechnen, summiert die Datenbank via `SUM()` und `CASE`-Statements die monatlichen Kosten extrem performant vor [cite: 340, 352-379, 1587, 1599-1626].
 
-| Service Layer
-| Anwendungsschicht: alle Use Cases
-| Geschäftslogik zentralisieren;
-  Controller schlank halten
-
-| [Weiteres Muster]
-| [Wo eingesetzt]
-| [Begründung]
-|===
-
-=== Fehlerbehandlung
-
-[cols="1,3", options="header"]
-|===
-| Aspekt | Konvention
-
-| Fachliche Fehler
-| Als eigene Exception-Klassen modellieren
-  (z. B. `RaumNichtVerfuegbarException`, `BuchungNichtGefundenException`)
-
-| HTTP-Fehlercodes
-| 400 für Validierungsfehler; 404 für nicht gefundene Ressourcen;
-  409 für Konflikte; 500 nur für unerwartete Systemfehler
-
-| Fehlermeldungen
-| Immer strukturiert zurückgeben:
-  `{ "fehler": "...", "details": "..." }` — kein Stack Trace an den Client
-
-| Logging
-| Fachliche Fehler als WARN; unerwartete Fehler als ERROR;
-  keine personenbezogenen Daten in Log-Ausgaben (DSGVO)
+| Thick Backend (Fat Controller)
+| `/api/import/csv` (PAP 4)
+| Die rechenintensive Mustererkennung von Kontoauszügen liegt komplett im Node.js-Backend, damit der Browser-Tab des Nutzers nicht einfriert[cite: 468, 1715].
 |===
 
 === API-Konventionen
@@ -399,19 +293,11 @@ Problem auf unterschiedliche Weise lösen._
 | Aspekt | Konvention
 
 | URL-Struktur
-| Ressourcenorientiert im Plural: `/buchungen`, `/raeume`, `/nutzer`
+| Ressourcenorientiert im Plural (z.B. `/api/subscriptions`, `/api/categories`).
 
 | HTTP-Methoden
-| GET = lesen; POST = erstellen; PUT = ersetzen; PATCH = teilweise ändern;
-  DELETE = löschen
+| Einhaltung der REST-Prinzipien: `GET` (Liste/Analyse), `POST` (Anlegen/Import), `PATCH` (Bearbeiten), `DELETE` (Löschen).
 
-| Antwortformat
-| JSON in allen Fällen; Datumsformat ISO 8601: `2024-06-01T09:00:00Z`
-
-| Versionierung
-| [z. B. URL-Präfix `/api/v1/` - Version nur erhöhen bei Breaking Changes]
+| Prepared Statements
+| Bei *jedem* SQL-Query werden Variablen zwingend über `$1, $2` gebunden (z. B. `[req.user.id]`), um SQL-Injections vollständig auszuschließen [cite: 264-271, 696, 1511-1518, 1943].
 |===
-
-_Diagramme in diesem Dokument sollten den aktuellen Stand des Codes widerspiegeln.
-Bei größeren Refactorings oder neuen Komponenten ist dieses Dokument im selben
-Pull Request zu aktualisieren._
