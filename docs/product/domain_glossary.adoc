@@ -121,6 +121,235 @@ Kurze Erläuterung zu den im Modell enthaltenen Entitäten.
 | [Beschreibung]
 |===
 
+
+
+= Domänenmodell und Glossar: SubscriptionGuard
+
+
+---
+
+== Glossar
+
+Alle *fachlichen* Begriffe und Abkürzungen werden hier alphabetisch definiert. Ziel ist eine einheitliche Sprache im gesamten Team. Technische Implementierungsdetails gehören nicht hierher!
+
+[cols="1,3,2", options="header"]
+|===
+| Begriff / Abkürzung | Definition | Synonyme / Abgrenzungen
+
+| Abonnement / Abo
+| Wiederkehrende Zahlung für einen Dienst.
+| Subscription; nicht: einmalige Zahlung
+
+| Anbieter
+| Unternehmen, das den Dienst erbringt.
+| Provider, Dienstleister
+
+| Auto-Verlängerung
+| Automatische Verlängerung des Vertrages nach Ablauf der Mindestlaufzeit.
+| Auto-Renewal
+
+| Budget
+| Selbstgesetztes monatliches Ausgabenlimit für Abonnements.
+| Kostenlimit; Ausgabengrenze
+
+| Doppeltes Abo
+| Mehrere aktive Abonnements in derselben Kategorie (z. B. zwei Streaming-Dienste).
+| Duplikat, Überschneidung
+
+| Einsparpotenzial
+| Summe der Kosten für wenig genutzte oder doppelte Abos, die gekündigt werden könnten.
+| Sparmöglichkeit; Optimierungspotenzial
+
+| Kategorie
+| Inhaltliche Gruppierung von Abos (z. B. Entertainment, Software, Fitness).
+| Rubrik
+
+| Kosten
+| Betrag, der pro Zahlungsintervall anfällt.
+| Preis, Gebühr
+
+| Kündigungsfrist
+| Zeitraum oder letztes Datum, bis wann ein Abo gekündigt werden muss.
+| Kündigungszeitpunkt; nicht zu verwechseln mit Vertragsende
+
+| Monatliche Kosten
+| Auf einen einzelnen Monat normalisierte Kosten (z. B. bei jährlicher Zahlung geteilt durch 12).
+| Normalisierte Kosten
+
+| Nutzer
+| Person, die die App verwendet.
+| User, Anwender
+
+| Nutzungsbewertung
+| Subjektive Einschätzung der Nutzungshäufigkeit (OFTEN, RARELY, NEVER, NOT_RATED).
+| Nutzungseinschätzung; keine objektive Messung
+
+| Pausiertes Abo
+| Ein Abonnement, das temporär deaktiviert wurde und aktuell keine Kosten verursacht.
+| Ruhendes Abo
+
+| Vertragsende
+| Ende der vertraglich vereinbarten Mindestlaufzeit.
+| Laufzeitende
+
+| Vorlauftage Erinnerung
+| Anzahl der Tage Vorwarnung vor Ablauf der Kündigungsfrist (Standard: 7).
+| Notification Lead Days
+
+| Währung
+| Verwendete Währung für die Abrechnung (z. B. EUR, USD, CHF).
+| Currency
+
+| Zahlungserinnerung
+| Eine durchgeführte Abbuchung, die dem Nutzer als Push-Meldung angezeigt wird.
+| Payment Notification
+
+| Zahlungsintervall
+| Rhythmus der Abrechnung (wöchentlich, monatlich, quartalsweise, jährlich).
+| Zahlungsperiode; Abrechnungszyklus
+
+| DSGVO 
+| Datenschutz-Grundverordnung
+| EU-Datenschutzrecht; GDPR (engl.)
+|===
+
+
+== Domänenmodell
+
+_Das Domänenmodell zeigt die wichtigsten fachlichen Konzepte (Entitäten) und ihre Beziehungen. Es beschreibt die Realität des Problemraums, nicht die Datenbankstruktur._
+
+=== Diagramm
+
+[plantuml, domain-model, svg]
+....
+@startuml
+entity "Nutzer" as user {
+  Name
+  E-Mail
+  Währung
+  Monatsbudget
+  Vorlauftage Erinnerung
+}
+
+entity "Kategorie" as category {
+  Name
+  Icon
+  Farbe
+}
+
+entity "Abonnement" as sub {
+  Name
+  Anbieter
+  Kosten
+  Intervall
+  Startdatum
+  Kündigungsfrist
+  Vertragsende
+  Auto-Verlängerung
+  Nutzungsbewertung
+  Pausiert
+}
+
+entity "Zahlung" as payment {
+  Datum
+  Betrag
+  Status
+}
+
+entity "Benachrichtigung" as notification {
+  Typ
+  Auslösedatum
+  Gesendet-Status
+  Nachricht
+}
+
+entity "Budget" as budget {
+  Monat
+  Zielbetrag
+}
+
+user "1" --> "0..*" sub : verwaltet
+user "1" --> "0..*" budget : plant
+category "1" <-- "0..*" sub : ist zugeordnet
+sub "1" --> "0..*" payment : generiert
+sub "1" --> "0..*" notification : erfordert
+@enduml
+....
+
+NOTE: Das Domänenmodell wird im Laufe des Projekts weiterentwickelt. Änderungen sollten immer gemeinsam im Team besprochen und hier nachgepflegt werden.
+
+=== Beschreibung der Entitäten
+
+Kurze Erläuterung zu den im Modell enthaltenen Entitäten.
+
+[cols="1,3", options="header"]
+|===
+| Entität | Beschreibung
+
+| Nutzer
+| Die zentrale Person, die die Anwendung bedient, um ihre laufenden Verträge und Ausgaben zu überwachen.
+
+| Abonnement (Abo)
+| Eine wiederkehrende vertragliche Verpflichtung bei einem Anbieter, die in regelmäßigen Abständen Kosten verursacht.
+
+| Kategorie
+| Eine inhaltliche Gruppierung, um Abonnements logisch zu trennen (z. B. um doppelte Abos in einer Kategorie zu erkennen).
+
+| Zahlung
+| Eine konkrete (ausstehende, erfolgreich gezahlte oder fehlgeschlagene) monetäre Transaktion, die aus einem Abonnement resultiert.
+
+| Benachrichtigung
+| Eine geplante Warnung oder Erinnerung für den Nutzer (z. B. Push-Nachricht kurz vor Ablauf der Kündigungsfrist).
+
+| Budget
+| Ein vom Nutzer für einen bestimmten Monat festgelegtes finanzielles Limit für all seine Abonnements.
+|===
+
+=== Beschreibung der Beziehungen
+
+Beschreibung der wichtigsten Beziehungen zwischen den Entitäten, sofern diese besondere Kardinalitäten haben oder aus anderen Gründen erklärungsbedürftig sind.
+
+[cols="1,1,1,3", options="header"]
+|===
+| Von | Zu | Kardinalität | Bedeutung
+
+| Nutzer
+| Abonnement
+| 1 zu 0..*
+| Ein Nutzer kann beliebig viele Abonnements in der App eintragen und verwalten.
+
+| Nutzer
+| Budget
+| 1 zu 0..*
+| Ein Nutzer kann für verschiedene Monate jeweils ein Budgetziel festlegen.
+
+| Kategorie
+| Abonnement
+| 1 zu 0..*
+| Jedes Abonnement ist exakt einer Kategorie zugeordnet. Eine Kategorie kann viele Abos bündeln (wichtig für die Kostenanalyse).
+
+| Abonnement
+| Zahlung
+| 1 zu 0..*
+| Ein Abonnement erzeugt im Laufe der Zeit viele Einzelzahlungen gemäß seinem Zahlungsintervall.
+
+| Abonnement
+| Benachrichtigung
+| 1 zu 0..*
+| Für ein Abonnement können mehrere Benachrichtigungen generiert werden (z. B. eine für die Kündigungsfrist, eine für eine Abbuchung).
+|===
+
+_Dieses Dokument wird kontinuierlich gepflegt. Änderungen an Fachbegriffen oder Beziehungen müssen hier nachgezogen werden, bevor sie in User Stories oder Code einfließen._
+
+
+
+
+
+
+
+
+
+
 === Beschreibung der Beziehungen
 
 Beschreibung der wichtigsten Beziehungen zwischen den Entitäten, sofern diese besondere Kardinalitäten haben oder aus anderen Gründen erklärungsbedürftig sind.
