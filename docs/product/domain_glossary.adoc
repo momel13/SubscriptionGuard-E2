@@ -276,6 +276,55 @@ sub "1" --> "0..*" notification : erfordert
 @enduml
 ....
 
+
+
+
+== Technologie-Mapping (Web-Stack)
+
+Um eine konsistente Umsetzung der Fachdomäne im Code zu gewährleisten, werden die fachlichen Komponenten wie folgt auf den gewählten Technologie-Stack abgebildet:
+
+[cols="1,1,2", options="header"]
+|===
+| Schicht / Komponente | Technologie | Fachliche Verantwortung
+
+| Präsentation - User Interface
+| React + TypeScript (Vite)
+| Umsetzung der Formulare (z. B. Abo anlegen) und das Routing innerhalb der App. 
+
+| Präsentation - Diagramme
+| Chart.js
+| Visuelle Aufbereitung der Kostenanalyse (Doughnut- und Bar-Charts). 
+
+| Logik - Services & API
+| Node.js + Express
+| Validierung der Eingaben, Aggregation der Kostendaten und Bereitstellung der REST-Endpunkte. 
+
+| Logik - Fristen-Job
+| node-cron
+| Automatisierte, tägliche Prüfung der Kündigungsfristen im Hintergrund. 
+
+| Logik - CSV-Parsing
+| csv-parse + multer
+| Verarbeitung von Bankauszügen zur automatischen Erkennung von Abonnements. 
+
+| Datenschicht - Datenbank
+| PostgreSQL / Supabase
+| Persistente Speicherung aller Abos, Nutzerprofile und Budgetziele. 
+
+| API-Vertrag
+| Shared TypeScript-Types
+| Sicherstellung, dass Frontend und Backend dieselbe Sprache sprechen (Vermeidung von Fehlern bei Feldnamen). 
+
+| Externe Dienste - Push
+| Web Push / FCM
+| Zustellung der Benachrichtigungen über anstehende Kündigungsfristen an den Nutzer. 
+|===
+
+
+
+
+
+
 NOTE: Das Domänenmodell wird im Laufe des Projekts weiterentwickelt. Änderungen sollten immer gemeinsam im Team besprochen und hier nachgepflegt werden.
 
 === Beschreibung der Entitäten
