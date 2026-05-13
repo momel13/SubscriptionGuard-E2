@@ -1,176 +1,604 @@
-=== Systemkontext
+= SubscriptionGuard - Architecture
+include::../_includes/default-attributes.inc.adoc[]
 
-[plantuml, "{diagramsdir}/system-context", svg]
-....
-@startuml
-!include <c4/C4_Context.puml>
+[[architecture]]
+:toc:
+:toclevels: 3
+:sectnums:
 
-title System Context Diagram – SubscriptionGuard
 
-Person(user, "Nutzer:in", "Verwaltet Abos, Budgets und lässt sich an Kündigungsfristen erinnern.")
+== 3.3 Architekturtreiber ableiten
+=== Ziel und Quellen
 
-System(system, "SubscriptionGuard", "Kernanwendung: Abo-Analyse, CSV-Import, Fristen-Tracking.")
+Dieses Dokument beschreibt die Architektur von SubscriptionGuard als Gesamtsystem. Es verbindet
+die kompakten Gesamtarchitektur-Inhalte aus `architecture (1).adoc` mit den detaillierten
+Frontend-Treibern aus der vorherigen Fassung von `architecture.adoc`.
 
-SystemDb(db, "PostgreSQL / Supabase", "Speichert Nutzer, Abos, Zahlungen und Budgets.")
+Einbezogene fachliche und technische Quellen:
 
-System_Ext(extAuth, "Supabase Auth", "Authentifizierung und Identitätsverwaltung (Login/Token).")
-System_Ext(extPush, "FCM / APNS", "Versand von Push-Benachrichtigungen an das Smartphone/Browser.")
+* `Hauptfunktionen-1-3.pdf`: Funktionskatalog F1-F8, Komponentenarchitektur, Klassendiagramm,
+  Use Cases UC1-UC5, PAP 1-5, Chancen, Risiken, Praesentationsstruktur und Glossar.
+* `SubscriptionGuard3.2-3.pdf`: Web-Stack-Mapping, Domaenenglossar, REST-API-Uebersicht,
+  SQL-Schema, Shared TypeScript-Types, Code-Beispiele fuer PAP 1-5, Stack-Vorteile,
+  technische Risiken und naechste Schritte.
+* `architecture (1).adoc`: Systemkontext, Gesamt-Technologie-Stack, ADRs zu TypeScript und
+  Supabase, technische Risiken und technische Schulden.
+* vorherige `architecture.adoc`: detaillierte Frontend-Treiber, Frontend-Systemgrenze,
+  Feature-Architektur, UI-Risiken und Frontend-ADRs.
 
-Rel(user, system, "nutzt", "React Web-App")
-Rel(system, db, "liest / schreibt", "pg-Treiber / REST")
-Rel(system, extAuth, "authentifiziert über", "OAuth / JWT")
-Rel(system, extPush, "triggert Push-Nachrichten über", "OS-API")
-@enduml
-....
+=== Architektur-Anforderungen aus dem Produktkonzept
 
-*Externe Schnittstellen:*
+Die folgende Tabelle fasst die wichtigsten architekturwirksamen Anforderungen aus dem
+Produktkonzept zusammen und verweist auf die ADR, in der die jeweilige Entscheidung
+ausfuehrlich dokumentiert ist.
 
-[cols="1,1,2,1", options="header"]
+[cols="3,6,2",options="header"]
 |===
-| Schnittstelle | Typ | Beschreibung | Protokoll / Format
+|Anforderung (aus Produktkonzept) |Technische Konsequenz |Entscheidung
 
-| Supabase Auth
-| Externes System
-| Übernimmt Login, Registrierung und Token-Verwaltung (JWT).
-| HTTPS / REST
+|*Datenverschluesselung sensibler Finanzdaten* +
+_(Datensicherheit)_
+|Da Finanzdaten hochsensibel sind und lokal auf dem Geraet liegen, reicht eine einfache
+Textspeicherung nicht aus. Dies erfordert die Integration von Datenbankverschluesselung
+(z.B. SQLCipher fuer SQLite) oder sicheren nativen Storage-APIs des Betriebssystems.
+|<<adr-008,ADR-008>>
 
-| FCM (Android) / APNS (iOS) / Web Push
-| Externes System
-| Zustellung der täglichen Fristen-Erinnerungen an die Endgeräte der Nutzer.
-| HTTPS / OS-spezifisch
-|===
+|*Massen-Datenverarbeitung beim CSV-Import* +
+_(Verzicht auf PSD2)_
+|Das Parsen grosser Kontoauszuege und die Mustererkennung von Abos ist rechenintensiv. Damit
+die App beim Import nicht "einfriert", muss dieser Prozess asynchron ablaufen (z.B.
+Auslagerung in Web Worker im Frontend oder ein lokales Node.js-Backend).
+|<<adr-005,ADR-005>>
 
+|*Dynamische Erweiterbarkeit* +
+_(Wartbarkeit)_
+|Um neue Kategorien in unter 30 Minuten hinzuzufuegen, darf die Architektur diese nicht "hart"
+im Code (Hardcoding) verdrahten. Sie erzwingt ein datenbankgetriebenes Modell (Kategorien als
+DB-Entitaeten statt als statische Enums im Frontend).
+|—
 
+|*Keine automatische Kuendigung* +
+_(Rechtliche Einschraenkung)_
+|Das System darf rechtlich keine Vertraege kuendigen. Architektonische Konsequenz: Das System
+ist nach aussen hin geschlossen (abgesehen von Updates/Backups). Es muessen keine komplexen
+Outbound-Schnittstellen zu Drittanbietern (Netflix, Fitnessstudios etc.) entwickelt oder
+gewartet werden.
+|—
 
-=== Übersicht
-
-[cols="1,1,2,2", options="header"]
-|===
-| Bereich | Technologie | Begründung | Entscheidung
-
-| Frontend (UI & Routing)
-| React + TypeScript (Vite)
-| Pragmatische Wahl für studentisches Projekt, starkes Komponentenmodell, große Community.
-| ADR-001
-
-| Diagramme & Analyse
-| Chart.js
-| Deklarative API, alle gängigen Diagrammtypen (Doughnut, Bar) vorhanden, ausreichend für MVP.
-| -
-
-| Backend (Logik & API)
-| Node.js + Express + TypeScript
-| Kein Context-Switch zwischen Frontend und Backend (beides TypeScript). Types/Interfaces können geteilt werden.
-| ADR-001
-
-| Datenbank (Produktion)
-| PostgreSQL (Hosting via Supabase)
-| Relationales Modell passt perfekt zur Fachdomäne. Supabase bietet Auth & DB out-of-the-box.
-| ADR-002
-
-| Datenbank (Entwicklung)
-| SQLite
-| Schnelle Entwicklungszyklen lokal ohne Docker-Zwang, weitgehende SQL-Kompatibilität zu Postgres.
-| ADR-002
-
-| Hintergrund-Jobs
-| node-cron
-| Leichtgewichtiger Scheduler für die tägliche Fristenprüfung (PAP 2).
-| -
+|*Cross-Platform-Verfuegbarkeit* +
+_(Portabilitaet)_
+|Die App soll auf mehreren Plattformen (Web, Mobile) funktionieren. Dies erzwingt die Wahl
+eines Cross-Platform-Stacks (wie React/Vite als PWA oder React Native) anstelle von nativer
+iOS/Android-Entwicklung, um die Code-Basis (Single Codebase) teilbar zu halten.
+|<<adr-001,ADR-001>>
 |===
 
+[NOTE]
+====
+Die Anforderung _Dynamische Erweiterbarkeit_ wird aktuell durch das relationale Datenmodell
+(siehe ADR-002, Tabelle `categories`) erfuellt, ist aber noch nicht in einem eigenen ADR
+festgehalten. Ein dediziertes ADR zum Kategorien-Datenmodell ist im Backlog.
+====
 
+=== Fachliche Architekturtreiber
 
-=== ADR-001: Eine gemeinsame Sprache (TypeScript) für Frontend und Backend
-
-[cols="1,3"]
+[cols="1,2,3,3",options="header"]
 |===
-| *Status*
-| Akzeptiert
+|Quelle |Anforderung |Architektur-Konsequenz |Betroffene Bausteine
 
-| *Datum*
-| {localdatetime}
+|F1 Abo-Verwaltung
+|Abos anlegen, bearbeiten, loeschen, pausieren und Kategorien zuweisen.
+|CRUD-Funktionen benoetigen UI-Formulare, REST-Endpunkte, serverseitige Validierung und
+persistente Speicherung.
+|Frontend `subscriptions`, Backend `subscriptions` Router, Tabellen `subscriptions`,
+`categories`.
 
-| *Kontext*
-| Da die Logik sowohl im Client (UI-Zustand, Formulare) als auch auf dem Server (Validierung, API, Cron-Jobs) läuft, besteht das Risiko von doppelter Code-Pflege und API-Vertragsbrüchen (API Drift).
+|F2 Fristen- und Vertragsmanagement
+|Kuendigungsfrist, Mindestlaufzeit, Auto-Verlaengerung und Verlaengerungswarnung.
+|Fristdaten werden im Abo-Modell gespeichert. Ein serverseitiger Scheduler prueft Fristen
+regelmaessig; das Frontend zeigt Erinnerungen an.
+|Frontend Fristenfelder, Backend Deadline-Job, Tabelle `notifications`, Push-Dienst.
 
-| *Entscheidung*
-| Wir verwenden TypeScript sowohl für das React-Frontend als auch für das Node.js/Express-Backend (als Monorepo). Die Typdefinitionen (`shared/types.ts`) werden von beiden Seiten importiert.
+|F3 Kostenuebersicht und Statistiken
+|Monatliche und jaehrliche Gesamtkosten, Kosten pro Kategorie, Verlauf und Prognose.
+|Kostenaggregation wird serverseitig bzw. datenbanknah berechnet; das Frontend visualisiert
+Ergebnisse mit Diagrammen.
+|Backend `analysis` Route, SQL-Aggregationen, Frontend `analysis`, Chart.js.
 
-| *Alternativen*
-| Java oder Python für das Backend. Wurde verworfen, da dies einen ständigen Context-Switch der Syntax erfordert und API-Schnittstellen (z.B. via Swagger/OpenAPI) aufwendiger synchronisiert werden müssen.
+|F4 Erinnerungs- und Warnsystem
+|Kuendigungs-, Zahlungs-, Preis- und Budgetwarnungen.
+|Warnungen werden als Notifications gespeichert und optional ueber Push ausgeliefert. Die App
+bietet ein Notification Center als Fallback.
+|Backend Notification-Service, Push-Adapter, Frontend `notifications`.
 
-| *Konsequenzen*
-| Frontend-Builds schlagen fehl, sobald das Backend ein Feld umbenennt, was Bugs vor dem Deployment verhindert. Geteilte Funktionen (wie `getCostPerMonth`) müssen nur einmal geschrieben und getestet werden.
+|F5 Analyse und Optimierung
+|Nutzungsbewertung, doppelte Abos, Einsparpotenzial, Kosten-Nutzen-Score.
+|Nutzungsdaten gehoeren ins Domaenenmodell. Empfehlungen entstehen aus Analyse-Queries und werden
+im Frontend nachvollziehbar angezeigt.
+|Tabelle `subscriptions.usage_rating`, Analyse-Engine, Recommendation UI.
+
+|F6 Import und Export
+|CSV-Import, automatische Erkennung wiederkehrender Zahlungen, PDF/CSV-Export.
+|Der Browser uebernimmt Upload und Review. Parsing und Mustererkennung laufen im Backend, damit
+grosse Dateien nicht das Browser-Tab blockieren.
+|Frontend Import-Wizard, Backend Import-Modul, `multer`, `csv-parse`, Export-Endpunkte.
+
+|F7 Budgetverwaltung
+|Monatsbudget, Fortschrittsanzeige, Sparziel.
+|Budgets werden pro Nutzer und Monat gespeichert. Statusantworten verwenden klare Statuswerte:
+`NO_BUDGET`, `WITHIN_BUDGET`, `OVER_BUDGET`.
+|Tabelle `budgets`, Backend Budget-Route, Frontend Budget-Widget.
+
+|F8 Einstellungen
+|Waehrung, Benachrichtigungszeiten, Datensicherung.
+|Nutzerbezogene Praeferenzen werden zentral gespeichert. UI bietet Settings fuer Waehrung,
+Reminder-Vorlauftage und Backup/Sync.
+|Tabelle `users`, Settings UI, Auth-/Session-Kontext.
+
+|UC1 / PAP 1
+|Abo anlegen: Formular, Validierung, Speichern, Erinnerungen, Liste aktualisieren.
+|Validierung wird serverseitig verbindlich ausgefuehrt; Frontend-Validierung dient der UX.
+|`POST /api/subscriptions`, `SubscriptionForm`, DB Insert.
+
+|UC2 / PAP 2
+|Taegliche Fristenpruefung und Push-Erinnerung.
+|Reiner Backend-/Infrastrukturprozess mit Anzeige im Frontend.
+|`node-cron`, SQL-Fristenquery, Push-Service, Notification Center.
+
+|UC3 / PAP 3
+|Kostenanalyse mit Diagramm-Dashboard.
+|Analyse-Endpoint liefert aggregierte Daten; Frontend rendert Kennzahlen, Charts und Empfehlungen.
+|`GET /api/analysis`, Analyse-Dashboard, Chart.js.
+
+|UC4 / PAP 4
+|CSV-Import mit Vorschlaegen und Bestaetigung.
+|Import erfolgt zweistufig: Upload liefert Kandidaten, Commit legt bestaetigte Abos an.
+|`POST /api/import/csv`, `POST /api/import/commit`, Import-Wizard.
+
+|UC5 / PAP 5
+|Budget setzen und ueberwachen.
+|Budgetstatus wird als typisierte API-Antwort an das Frontend geliefert.
+|`GET /api/budget/status`, `PUT /api/budget`, Budget UI.
 |===
 
+=== Qualitaetsanforderungen
 
-=== ADR-002: Supabase für Hosting und Authentifizierung statt Eigenentwicklung
-
-[cols="1,3"]
+[cols="1,3,3",options="header"]
 |===
-| *Status*
-| Akzeptiert
+|Treiber |Begruendung |Architekturantwort
 
-| *Datum*
-| {localdatetime}
+|Einfache Bedienung
+|Zielgruppe sind Studierende und junge Erwachsene; die App muss intuitiv sein.
+|Klare Hauptnavigation, gefuehrte Formulare, Import-Wizard, sichtbare Fehlerzustaende.
 
-| *Kontext*
-| Die Implementierung von sicherer Authentifizierung (JWT, Bcrypt, Token-Refresh) sowie der Aufbau und das Hosting einer eigenen Datenbank verschlingen viel Zeit in studentischen Software-Engineering-Projekten.
+|Finanzielle Transparenz
+|Nutzer sollen Fixkosten, Budgets und Einsparpotenzial auf einen Blick verstehen.
+|Dashboard mit normalisierten Monatskosten, Jahresprojektion, Kategorieaufschluesselung,
+Budgetstatus und Empfehlungen.
 
-| *Entscheidung*
-| Wir lagern die Authentifizierung und das Datenbank-Hosting an Supabase (PostgreSQL-basiert) aus, behalten aber ein eigenes Express-Backend für komplexe Logik (CSV-Parsing, Cron-Jobs).
+|Datenschutz
+|Finanzdaten, Kontoauszuege und Zahlungsdaten sind sensibel.
+|EU-Region fuer Supabase, keine Drittanbieter-Tracker, keine CSV-Rohdaten im Frontend speichern,
+sensible Daten nur authentifiziert abrufen.
 
-| *Alternativen*
-| Lokale PostgreSQL via Docker + eigenes Auth-System via Passport.js. Verworfen, da zu fehleranfällig und aufwendig für das enge Zeitbudget des Projekts.
+|API-Vertragssicherheit
+|Frontend und Backend muessen dieselbe Fachsprache verwenden.
+|Shared TypeScript-Types in `shared/types.ts`, camelCase im API-Vertrag, snake_case nur in SQL.
 
-| *Konsequenzen*
-| Beschleunigt den Weg zum MVP drastisch. Es entsteht ein Vendor Lock-in bei Supabase, der aber durch die Standard-PostgreSQL-Basis abgemildert wird.
+|Sicherheit
+|Manipulierte Requests und SQL-Injection muessen ausgeschlossen werden.
+|Serverseitige Validierung, Prepared Statements, zentrale Auth-/Session-Pruefung.
+
+|Performance
+|Analyse und Import koennen rechenintensiv werden.
+|Aggregation in SQL/Backend, CSV-Erkennung im Backend, Chart.js selektiv registrieren,
+Code-Splitting im Frontend.
+
+|Erweiterbarkeit
+|Ausblick nennt KI, Bank-Anbindung, Gruppenabos und Cloud-Sync.
+|Schichtentrennung, feature-orientierte Module, externe Dienste ueber Adapter kapseln.
+
+|MVP-Fokus
+|F1-F8 sind umfangreich und koennen das Projekt ueberladen.
+|Kernablaeufe priorisieren: Abos, Fristen, Analyse, Import, Budget; optionale Erweiterungen
+sauber im Backlog fuehren.
 |===
 
+=== Risiken und Gegenmassnahmen
 
-
-=== Technische Risiken
-
-[cols="2,1,2,2", options="header"]
+[cols="2,1,1,3",options="header"]
 |===
-| Risiko | Auswirkung | Wahrscheinlichkeit | Maßnahme
+|Risiko |Auswirkung |Wahrscheinlichkeit |Massnahme
 
-| SQL-Injection durch unsichere Queries
-| Hoch
-| Mittel
-| IMMER Prepared Statements (`$1, $2...`) verwenden. Wird im Code-Review strikt geprüft.
+|SQL-Injection durch unsichere Queries
+|Hoch
+|Mittel
+|Prepared Statements (`$1`, `$2`, ...) fuer alle Datenbankzugriffe. Code-Reviews pruefen SQL
+explizit.
 
-| DSGVO-Verletzung bei Supabase-Hosting (Default: USA)
-| Hoch
-| Niedrig
-| Bei Projektanlage ausdrücklich EU-Region (`eu-central-1`) wählen.
+|DSGVO-Verletzung durch falsche Supabase-Region
+|Hoch
+|Niedrig
+|Supabase-Projekt bewusst in EU-Region anlegen und AVV/DSGVO-Anforderungen dokumentieren.
 
-| Asynchrone Fehler im Backend legen Server lahm
-| Hoch
-| Mittel
-| Globale Error-Middleware in Express + `express-async-errors` implementieren.
+|Sensible Finanzdaten im Browser
+|Hoch
+|Mittel
+|Keine CSV-Rohdaten persistieren, keine Tracking-Skripte, keine Finanzdaten in Logs, Session
+sauber schuetzen.
 
-| Chart.js Bundle-Größe bläht Ladezeiten auf
-| Mittel
-| Mittel
-| Nur benötigte Komponenten registrieren (z.B. `Chart.register(DoughnutController, ArcElement)`) statt kompletter Bibliothek.
+|Frontend-Validierung wird als Sicherheit missverstanden
+|Hoch
+|Mittel
+|Frontend prueft nur fuer Benutzerkomfort. Backend-Validierung ist verbindlich.
 
-| SQL-Dialekt-Differenzen zwischen SQLite (Dev) und Postgres (Prod)
-| Mittel
-| Mittel
-| SQL-Features auf den gemeinsamen Nenner reduzieren oder für komplexere Queries Query-Builder nutzen.
+|Asynchrone Backend-Fehler bleiben unbehandelt
+|Hoch
+|Mittel
+|Globale Express Error Middleware, saubere Promise-Behandlung, strukturierte API-Fehler.
+
+|SQL-Dialekt-Differenzen zwischen SQLite und PostgreSQL
+|Mittel
+|Mittel
+|Komplexe Queries auf Postgres ausrichten oder Query-Builder/Migrationswerkzeug nutzen.
+
+|Chart.js Bundle-Groesse
+|Mittel
+|Mittel
+|Nur benoetigte Chart-Komponenten registrieren und Analyse-Route lazy laden.
+
+|Diagramme werden bei vielen Kategorien unleserlich
+|Mittel
+|Mittel
+|Top-5 plus "Sonstige", Tabellenansicht als Alternative.
+
+|CSV-Import erzeugt falsche Kandidaten
+|Mittel
+|Mittel
+|Vorschlaege nie automatisch speichern; Nutzer bestaetigt/verwirft jeden Kandidaten.
+
+|Push-Berechtigung wird abgelehnt
+|Niedrig
+|Mittel
+|In-App Notification Center als Fallback; Browser Permission erst kontextbezogen anfragen.
+
+|REST liefert keine Echtzeit-Updates
+|Niedrig
+|Mittel
+|Refetch nach Mutationen, optionales Polling fuer Notifications; WebSockets erst bei echtem Bedarf.
 |===
 
 === Technische Schulden
 
-[cols="2,2,1", options="header"]
+[cols="2,3,1",options="header"]
 |===
-| Beschreibung | Begründung für Kompromiss | Backlog-Eintrag
+|Beschreibung |Begruendung fuer Kompromiss |Backlog
 
-| Keine Echtzeit-Updates im Frontend (Polling statt WebSockets)
-| Für den MVP und die reinen Erinnerungsfunktionen reicht asynchrone REST-Kommunikation völlig aus. | -
+|Polling statt WebSockets
+|Fuer MVP, Budgetstatus und Erinnerungsliste reicht REST mit gezieltem Refetch. Echtzeit wuerde
+Komplexitaet erhoehen.
+|Optional Supabase Realtime pruefen.
 
-| Fehlende Frontend-Validierung schützt nicht vor mutwillig falscher API-Nutzung
-| DevTools lassen Umgehung zu; Server-Side-Validation (Backend) hat daher absolute Priorität und reicht als primärer Schutz. | -
+|SQLite in Entwicklung, PostgreSQL in Produktion
+|SQLite beschleunigt lokalen Start, kann aber SQL-Unterschiede erzeugen.
+|Mittelfristig Postgres lokal via Docker/Supabase CLI nutzen.
+
+|Frontend-Validierung nicht vollstaendig
+|Der Primaerschutz liegt bewusst im Backend. Frontend-Validierung wird zuerst auf zentrale Felder
+beschraenkt.
+|Validierungsschemata mit zod/joi teilen oder generieren.
+
+|Export-Funktion nachrangig
+|F6 enthaelt Import und Export; Import ist fuer den MVP wertvoller.
+|PDF/CSV-Export nach Kernablaeufen ergaenzen.
 |===
+
+== 3.4 Architekturansatz und Technologie-Stack festlegen
+
+=== Systemkontext
+
+[plantuml,system-context,svg]
+----
+@startuml
+left to right direction
+skinparam componentStyle rectangle
+
+actor "Nutzer:in" as User
+
+rectangle "SubscriptionGuard\nWeb-Anwendung" as System {
+  [React Frontend] as Frontend
+  [Express Backend] as Backend
+  [Deadline Job] as Job
+}
+
+database "PostgreSQL / Supabase\nProduktion" as Db
+database "SQLite\nlokale Entwicklung" as Sqlite
+cloud "Supabase Auth" as Auth
+cloud "FCM / APNS / Web Push" as Push
+file "CSV-Datei\nKontoauszug / Excel" as Csv
+file "PDF / CSV Export" as Export
+
+User --> Frontend : nutzt UI
+Csv --> Frontend : Datei auswaehlen
+Frontend --> Backend : REST / JSON / FormData
+Frontend --> Auth : Login / Session
+Backend --> Db : SQL / pg-Treiber
+Backend --> Sqlite : SQL im Dev-Modus
+Backend --> Auth : Token pruefen
+Job --> Db : Fristen pruefen
+Backend --> Push : Benachrichtigung ausloesen
+Push --> User : Erinnerung zustellen
+Backend --> Export : Exportdaten liefern
+@enduml
+----
+
+=== Systemgrenzen und externe Schnittstellen
+
+[cols="1,1,3,2",options="header"]
+|===
+|Schnittstelle |Typ |Beschreibung |Protokoll / Format
+
+|REST API
+|Intern zwischen Frontend und Backend
+|Einzige fachliche Schnittstelle fuer Abos, Kategorien, Analyse, Import, Budget, Notifications
+und Settings.
+|HTTPS / JSON, Upload via `FormData`.
+
+|Supabase Auth
+|Externes System
+|Login, Registrierung, Token-Verwaltung und Session-Kontext.
+|HTTPS / JWT.
+
+|PostgreSQL / Supabase
+|Persistenz
+|Speichert Nutzer, Abos, Kategorien, Zahlungen, Budgets und Notifications.
+|SQL / pg-Treiber oder Supabase Client.
+
+|SQLite
+|Lokale Entwicklung
+|Option fuer schnelle lokale Entwicklungszyklen ohne Server-Setup.
+|Dateibasierte SQL-Datenbank.
+
+|FCM / APNS / Web Push
+|Externes Push-System
+|Zustellung von Erinnerungen und Warnungen.
+|HTTPS / OS- oder Browser-spezifisch.
+
+|CSV-Datei
+|Nutzerdatei
+|Kontoauszug oder Excel-Export fuer wiederkehrende Zahlungen.
+|CSV Upload.
+
+|PDF/CSV Export
+|Ausgabe
+|Export der Abos fuer Backup oder Weiterverarbeitung.
+|Download.
+|===
+
+=== Schichtenarchitektur
+
+[plantuml,layers,svg]
+----
+@startuml
+top to bottom direction
+skinparam componentStyle rectangle
+
+rectangle "Praesentationsschicht\nReact, TypeScript, Chart.js, Mantine" as Presentation
+rectangle "Logikschicht\nNode.js, Express, TypeScript, node-cron" as Logic
+rectangle "Datenschicht\nPostgreSQL/Supabase, SQLite Dev" as Data
+rectangle "Externe Dienste\nSupabase Auth, FCM/APNS/Web Push" as External
+
+Presentation --> Logic : REST / JSON
+Presentation --> External : Auth Session / Browser Push Permission
+Logic --> Data : SQL / Prepared Statements
+Logic --> External : Auth pruefen / Push senden
+@enduml
+----
+
+[cols="1,3,2",options="header"]
+|===
+|Schicht |Verantwortung |Technologien
+
+|Praesentationsschicht
+|UI rendern, Eingaben erfassen, Diagramme zeichnen, Upload/Download starten, REST-Aufrufe
+ausloesen, Browser Notifications anzeigen.
+|React, TypeScript, Vite, React Router, Mantine, Chart.js.
+
+|Logikschicht
+|Routing, Auth-Pruefung, serverseitige Validierung, Aggregation, CSV-Parsing, Fristenjob,
+Notification-Erzeugung.
+|Node.js, Express, TypeScript, node-cron, multer, csv-parse.
+
+|Datenschicht
+|Persistenz, Constraints, Indizes, relationale Integritaet und datenbanknahe Aggregation.
+|PostgreSQL/Supabase, SQLite fuer Dev.
+
+|Externe Dienste
+|Authentifizierung, Push-Zustellung und optional spaetere Cloud-/Realtime-Funktionen.
+|Supabase Auth, FCM, APNS, Web Push.
+|===
+
+=== Technologie-Stack
+
+[cols="1,2,3,1",options="header"]
+|===
+|Bereich |Technologie |Begruendung |ADR
+
+|Frontend UI & Routing
+|React + TypeScript + Vite + React Router
+|Pragmatische Wahl fuer studentisches Projekt, starkes Komponentenmodell, schnelle
+Entwicklung und gemeinsame Sprache mit Backend.
+|ADR-001, ADR-003
+
+|UI-Komponenten
+|Mantine
+|Beschleunigt Formulare, Dialoge, Tabs, Tabellen, Fortschrittsanzeigen und Accessibility.
+|ADR-006
+
+|Diagramme & Analyseanzeige
+|Chart.js
+|Reicht fuer Doughnut-, Bar- und Line-Charts; passt zu PAP 3.
+|ADR-004
+
+|Backend Logik & API
+|Node.js + Express + TypeScript
+|Kein Context-Switch zwischen Frontend und Backend; Shared Types koennen gemeinsam genutzt
+werden.
+|ADR-001
+
+|API-Stil
+|REST / JSON
+|Fuer das Projekt einfach, bekannt und ausreichend; Uploads via `FormData`.
+|ADR-003
+
+|Datenbank Produktion
+|PostgreSQL via Supabase
+|Relationales Modell passt gut zur Domaene. Supabase bietet DB und Auth out-of-the-box.
+|ADR-002
+
+|Datenbank Entwicklung
+|SQLite oder lokal PostgreSQL
+|SQLite ist schnell fuer den Start; lokal PostgreSQL reduziert spaeter SQL-Dialektrisiken.
+|ADR-002
+
+|Auth
+|Supabase Auth
+|Sichere Auth selbst zu bauen ist fuer das Projekt zu aufwendig.
+|ADR-002
+
+|Hintergrund-Jobs
+|node-cron
+|Leichtgewichtiger Scheduler fuer die taegliche Fristenpruefung aus PAP 2.
+|ADR-005
+
+|CSV-Import
+|multer + csv-parse
+|Datei-Upload und robustes CSV-Parsing im Backend statt im Browser.
+|ADR-005
+
+|Testing
+|Vitest, React Testing Library, Backend-Tests
+|Testet reine Funktionen, Komponenten, API-Fehlerfaelle und zentrale Service-Logik.
+|-
+|===
+
+== 3.5 Architekturentscheidungen dokumentieren
+
+[[adr-001]]
+=== ADR-001: Eine gemeinsame Sprache mit TypeScript fuer Frontend und Backend
+
+*Status:* akzeptiert
+
+*Kontext:* Frontend und Backend verwenden dieselben Domaenenbegriffe. Ohne gemeinsame Typen
+entsteht API-Drift, z.B. bei Feldern wie `cancelDeadline`, `usageRating` oder
+`savingsPotential`.
+
+*Entscheidung:* Frontend und Backend werden in TypeScript umgesetzt. Zentrale
+Typdefinitionen und reine Domaenenfunktionen liegen in `shared/types.ts`.
+
+*Alternativen:* Java, Python oder andere Backend-Sprachen. Verworfen, weil dadurch mehr
+Synchronisationsaufwand fuer API-Vertraege entsteht.
+
+*Konsequenzen:* Der Build erkennt Feldumbenennungen frueh. Hilfsfunktionen wie
+`getCostPerMonth` koennen gemeinsam getestet und wiederverwendet werden.
+
+[[adr-002]]
+=== ADR-002: Supabase fuer PostgreSQL-Hosting und Authentifizierung
+
+*Status:* akzeptiert
+
+*Kontext:* Eigene Authentifizierung mit JWT, Password Reset, Token Refresh und sicherem
+DB-Hosting ist fehleranfaellig und fuer ein studentisches Projekt zeitintensiv.
+
+*Entscheidung:* Authentifizierung und PostgreSQL-Hosting werden an Supabase ausgelagert. Ein
+eigenes Express-Backend bleibt fuer komplexe Logik wie CSV-Parsing, Analyse und Cron-Jobs
+erhalten.
+
+*Alternativen:* Eigene PostgreSQL-Instanz plus Passport/Auth-Library. Verworfen fuer den MVP,
+weil Setup- und Sicherheitsaufwand hoeher sind.
+
+*Konsequenzen:* Der MVP kommt schneller voran. Es entsteht eine gewisse Supabase-Bindung, die
+durch PostgreSQL als Standardbasis abgemildert wird. EU-Region ist verpflichtend zu waehlen.
+
+[[adr-003]]
+=== ADR-003: REST/JSON als primaere Schnittstelle
+
+*Status:* akzeptiert
+
+*Kontext:* Die Vorarbeit definiert REST-Endpunkte fuer alle Kernablaeufe. Das Team braucht eine
+einfache, gut verstaendliche Schnittstelle.
+
+*Entscheidung:* Das Frontend kommuniziert mit dem Backend ueber REST/JSON. CSV-Uploads laufen
+ueber `FormData`. Backend und Datenbank werden nicht direkt aus dem Frontend angesprochen,
+ausser Auth-Flows ueber Supabase Auth.
+
+*Konsequenzen:* Die Architektur bleibt einfach. Realtime-Funktionen werden erst bei Bedarf
+ergaenzt.
+
+[[adr-004]]
+=== ADR-004: Chart.js fuer Analysevisualisierungen
+
+*Status:* akzeptiert
+
+*Kontext:* PAP 3 fordert ein Analyse-Dashboard mit Diagrammen. Die benoetigten Diagrammtypen
+sind Standardfaelle.
+
+*Entscheidung:* Kategorieaufschluesselung, Kostenentwicklung und Prognosen werden mit Chart.js
+visualisiert.
+
+*Konsequenzen:* Nur benoetigte Komponenten werden registriert. Bei vielen Kategorien werden
+Top-5 plus "Sonstige" und Tabellenansichten genutzt.
+
+[[adr-005]]
+=== ADR-005: Backend fuer rechenintensive und zeitgesteuerte Fachlogik
+
+*Status:* akzeptiert
+
+*Kontext:* CSV-Erkennung, Kostenaggregation und taegliche Fristenpruefung duerfen das Frontend
+nicht blockieren und brauchen Zugriff auf persistente Daten.
+
+*Entscheidung:* CSV-Parsing, Mustererkennung, Analyseaggregation und Deadline-Check laufen im
+Backend bzw. in SQL. Das Frontend stellt nur UI, Upload, Review und Anzeige bereit.
+
+*Konsequenzen:* Der Browser bleibt stabil. Backend und Datenbank tragen mehr fachliche
+Verantwortung, muessen also gut getestet werden.
+
+[[adr-006]]
+=== ADR-006: Feature-orientierte Frontend-Struktur mit Mantine
+
+*Status:* akzeptiert
+
+*Kontext:* F1-F8 bilden natuerliche Produktbereiche. Die UI braucht viele Standard-Controls.
+
+*Entscheidung:* Das Frontend wird nach Features strukturiert (`subscriptions`, `analysis`,
+`budget`, `import`, `notifications`, `settings`, `auth`) und nutzt Mantine fuer robuste
+UI-Bausteine.
+
+*Konsequenzen:* Fachliche Aenderungen bleiben lokal. Standard-Controls muessen nicht selbst
+gebaut werden.
+
+[[adr-007]]
+=== ADR-007: Notification Center plus optionaler Browser Push
+
+*Status:* akzeptiert
+
+*Kontext:* Push-Berechtigungen koennen abgelehnt werden, Erinnerungen muessen aber trotzdem
+sichtbar bleiben.
+
+*Entscheidung:* Das Frontend bietet immer ein In-App Notification Center. Browser Notifications
+werden optional per Service Worker aktiviert.
+
+*Konsequenzen:* Die App bleibt nutzbar, auch wenn Push nicht erlaubt ist.
+
+[[adr-008]]
+=== ADR-008: Datenschutzfreundliches Frontend
+
+*Status:* akzeptiert
+
+*Kontext:* Finanzdaten und Kontoauszuege sind sensibel.
+
+*Entscheidung:* Das Frontend verzichtet auf Drittanbieter-Tracking, speichert keine CSV-Rohdaten
+dauerhaft und haelt fachliche Finanzdaten nur als kurzlebigen UI-/Server-State.
+
+*Konsequenzen:* Datenschutzrisiko und Synchronisationskomplexitaet sinken. Offline-Faehigkeit
+bleibt im Web-Frontend bewusst begrenzt.

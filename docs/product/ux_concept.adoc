@@ -18,7 +18,7 @@ Sie helfen dem Team, Entscheidungen konsequent aus Nutzerperspektive zu treffen.
 Personas sollten auf echten Nutzerinterviews oder Beobachtungen basieren — nicht
 auf Annahmen allein._
 
-_Hinweis: Im link:product_concept.adoc[Produktkonzept] werden Zielgruppen nur benannt. Hier werden sie als Personas ausgearbeitet._
+_Hinweis: Im link:product_concept.adoc[docs/product/product_concept.adoc] werden Zielgruppen nur benannt. Hier werden sie als Personas ausgearbeitet._
 
 === Persona 1: [Florian Ruhdolpf]
 
@@ -113,8 +113,7 @@ Soziale & organisatorische Umgebung: Organisationsstruktur, Zusammenarbeit, Unte
 _Wie lösen die Nutzenden ihr Problem heute? Diese Beschreibung zeigt, was das Produkt
 verbessern soll — und macht den Mehrwert explizit._
 
-[Beschreibe den heutigen Ablauf in 3–5 Sätzen oder als kurze Schrittfolge. Beispiel: „Heute fragt Maria an der Infotheke nach freien Räumen, erhält eine Liste per E-Mail, und stellt beim Ankommen fest, dass der Raum bereits belegt ist.
-Der Prozess kostet sie im Schnitt 20 Minuten pro Tag."]
+[Derzeit verwalten Studierende und junge Erwachsene ihre Abonnements oft gar nicht, über unübersichtliche Kontoauszüge oder verstreute E-Mails. Dies führt dazu, dass Kündigungsfristen im Alltag vergessen werden und ungewollte Kosten durch automatische Verlängerungen entstehen. Das manuelle Ermitteln der monatlichen Fixkosten oder Einsparpotenziale ist zeitaufwendig und führt zu einem hohen "Mental Load".]
 
 === Nutzungshürden & Risiken
 
@@ -134,135 +133,105 @@ _Was könnte die Akzeptanz oder Nutzung des Produkts beeinträchtigen?_
 | [Reaktion]
 |===
 
-== Systemweite Interaktionsflüsse
+=== Interaktionsfluss: Abo manuell anlegen (UC1)
 
-_Dieser Abschnitt beschreibt Abläufe, die mehrere Features oder Bereiche des Produkts
-umfassen. Einzelne Feature-Wireframes werden in den jeweiligen User Stories gepflegt.
-Hier dokumentieren wir nur Flüsse auf Systemebene, z.B. mit UML-Aktivitätsdiagrammen._
+_Dieser Fluss zeigt, wie ein Nutzer manuell ein neues Abonnement erfasst und wie das System darauf reagiert, um zukünftige Erinnerungen sicherzustellen [cite: 967-986]._
 
-=== [Flussname, z. B. Onboarding-Flow]
-
-_Beschreibe kurz, was dieser Fluss abdeckt und welche Personas er betrifft._
-
-[plantuml, onboarding-flow, svg]
+[plantuml, abo-anlegen-flow, svg]
 ....
 @startuml
 skinparam monochrome true
 skinparam defaultFontSize 13
 
 start
-:App öffnen;
-if (Bereits registriert?) then (ja)
-  :Login;
-else (nein)
-  :Registrierung;
-  :Bestätigungs-E-Mail;
-  :E-Mail bestätigen;
+:Nutzer tippt "Abo hinzufügen";
+:System zeigt Eingabeformular;
+:Nutzer gibt Name, Kosten, Intervall etc. ein;
+if (Eingaben gültig?) then (nein)
+  :Fehlermeldung anzeigen;
+  stop
+else (ja)
+  :Abo in Datenbank speichern;
+  :Monatliche Kosten berechnen;
+  if (Kündigungsfrist vorhanden?) then (ja)
+    :Erinnerung im System erstellen;
+  endif
+  :Abo-Liste aktualisieren;
 endif
-:Startseite;
 stop
-
 @enduml
 ....
-
-[cols="1,1,2", options="header"]
-|===
-| Schritt | Beteiligte Persona | Anmerkung
-
-| App öffnen
-| Maria (Studierende)
-| Erster Einstiegspunkt; muss sofort orientieren
-
-| Login / Registrierung
-| Alle Personas
-| Registrierung nur beim ersten Besuch; danach automatischer Login
-
-| Startseite
-| Alle Personas
-| Zeigt direkt die wichtigste Funktion — keine unnötige Zwischenseite
-|===
 
 ---
 
-=== [Weiterer Fluss, z. B. Buchungsabbruch & Fehlerbehandlung]
+=== Interaktionsfluss: CSV-Import (UC4)
 
-_Beschreibe den Fluss und ergänze ein Diagramm nach demselben Muster._
+_Dieser Fluss beschreibt den Massenimport von Kontoauszügen, bei dem das System dem Nutzer die Arbeit abnimmt, wiederkehrende Muster zu erkennen [cite: 1019-1036]._
 
-[plantuml, error-flow, svg]
+[plantuml, csv-import-flow, svg]
 ....
 @startuml
 skinparam monochrome true
+skinparam defaultFontSize 13
 
 start
-:Buchung starten;
-if (Raum noch verfügbar?) then (ja)
-  :Buchung bestätigen;
-  :Bestätigung anzeigen;
-else (nein)
+:Nutzer wählt CSV-Datei aus;
+if (Datei lesbar?) then (nein)
   :Fehlermeldung anzeigen;
-  :Alternative Räume vorschlagen;
+  stop
+else (ja)
+  :System parst Datei;
+  :Mustererkennung für Abos;
+  if (Wiederkehrende Muster gefunden?) then (nein)
+    :Meldung "Keine Abos erkannt";
+    stop
+  else (ja)
+    :Vorschläge anzeigen;
+    :Nutzer bestätigt/verwirft Vorschläge;
+    :Bestätigte Abos automatisch anlegen;
+    :Zusammenfassung anzeigen;
+  endif
 endif
 stop
-
 @enduml
 ....
-
-== Designsystem & Interaktionsprinzipien
-
-_Dieser Abschnitt dokumentiert systemweite Design- und Interaktionsentscheidungen,
-die konsistent über alle Features hinweg gelten. Sie bilden die Basis für alle
-Wireframes und UI-Implementierungen._
-
-=== Visuelle Sprache
-
 [cols="1,3", options="header"]
 |===
 | Aspekt | Entscheidung & Begründung
 
 | Farbpalette
-| [z. B. Primärfarbe: Hochschulblau #003D6E; Akzent: #E87722;
-  Begründung: Corporate Identity der Hochschule]
+| Primärfarbe: Ein klares App-Blau. Ampel-Logik für Budgets: Grün (#48bb78) für "im Budget" und Rot (#e53e3e) für Überschreitungen. Begründung: Schnelle visuelle Erfassbarkeit des Finanzstatus.
 
 | Typografie
-| [z. B. Fließtext: Inter 16px; Überschriften: Inter Bold;
-  Begründung: Hohe Lesbarkeit auf kleinen Bildschirmen]
+| Serifenlose Systemschriftarten (Inter/Arial). Begründung: Maximale Lesbarkeit von Zahlenwerten auf kleinen Smartphone-Bildschirmen.
 
 | Ikonografie
-| [z. B. Material Icons; konsistentes Icon-Set im gesamten Produkt]
+| Kategorie-Icons (Entertainment, Fitness, Mobilität etc.). Begründung: Erleichtert die schnelle visuelle Einordnung der verschiedenen Abos.
 
-| Bildsprache
-| [z. B. Keine Stock-Fotos; Illustrationen im Flat-Design-Stil]
+| Diagramme
+| Doughnut-Charts (Chart.js) für die Kostenverteilung. Begründung: Einfache visuelle Aufbereitung, ohne das UI zu überladen.
 |===
 
 === Interaktionsprinzipien
 
-_Vereinbarte UX-Regeln, die für das gesamte Produkt gelten. Jede Entscheidung
-wird begründet, damit sie nicht aus Unwissenheit verletzt wird._
+_Vereinbarte UX-Regeln, die für das gesamte Produkt gelten. Jede Entscheidung wird begründet, damit sie nicht aus Unwissenheit verletzt wird._
 
 [cols="2,3", options="header"]
 |===
 | Prinzip | Beschreibung & Begründung
 
-| Destruktive Aktionen werden immer bestätigt.
-| Lösch- oder Stornieraktionen erfordern eine explizite Bestätigung durch die Nutzenden.
-  Verhindert unbeabsichtigte Datenverluste.
+| **Einfachheit (MVP-Fokus)**
+| Reduziertes Interface ohne unnötige komplexe Finanz-Features. Begründung: Nutzer wollen eine schnelle Übersicht, kein Buchhaltungs-Tool.
 
-| Leerzustände erklären sich und schlagen eine Aktion vor.
-| Wenn eine Liste leer ist, zeigen wir eine kurze Erklärung und einen Call-to-Action —
-  niemals nur eine leere Fläche. Reduziert Orientierungslosigkeit.
+| **Datenschutz durch Transparenz**
+| Prominenter Hinweis auf lokale Datenspeicherung (Offline-First). Begründung: Reduziert Skepsis bei der Eingabe sensibler Finanzdaten.
 
-| Fehlermeldungen sind verständlich und handlungsorientiert.
-| Fehlermeldungen nennen die Ursache in einfacher Sprache und schlagen einen
-  nächsten Schritt vor. Kein technischer Jargon für Endnutzer:innen.
+| **Destruktive Aktionen werden immer bestätigt**
+| Lösch- oder Stornieraktionen erfordern eine explizite Bestätigung durch die Nutzenden. Verhindert unbeabsichtigte Datenverluste.
 
-| Kernfunktionen sind mit einer Hand erreichbar.
-| Primäre Aktionen befinden sich im unteren Bildschirmbereich (Daumenzone).
-  Optimiert für einhändige Smartphone-Nutzung.
-
-| [Weiteres Prinzip]
-| [Beschreibung & Begründung]
+| **Kernfunktionen sind mit einer Hand erreichbar**
+| Primäre Aktionen (z. B. "Abo hinzufügen") befinden sich im unteren Bildschirmbereich (Daumenzone). Optimiert für einhändige Smartphone-Nutzung.
 |===
-
 === Barrierefreiheit
 
 [cols="1,3", options="header"]
