@@ -81,8 +81,8 @@ Alle *fachlichen* Begriffe und Abkürzungen werden hier alphabetisch definiert. 
 | Currency
 
 | Zahlungserinnerung
-| Eine durchgeführte Abbuchung, die dem Nutzer als Push-Meldung angezeigt wird.
-| Payment Notification
+| Eine Benachrichtigung, die den Nutzer auf eine anstehende oder getätigte Zahlung hinweist (nicht die Zahlung selbst).
+| Payment Notification, Zahlungsbenachrichtigung
 
 | Zahlungsintervall
 | Rhythmus der Abrechnung (wöchentlich, monatlich, quartalsweise, jährlich).
@@ -91,6 +91,18 @@ Alle *fachlichen* Begriffe und Abkürzungen werden hier alphabetisch definiert. 
 | DSGVO 
 | Datenschutz-Grundverordnung
 | EU-Datenschutzrecht; GDPR (engl.)
+
+| Zahlung
+| Eine konkrete monetäre Transaktion (Abbuchung), die aus einem Abonnement resultiert.
+| Transaktion, Abbuchung
+
+| Benachrichtigung
+| Eine geplante Warnung oder Erinnerung für den Nutzer (z. B. Push-Nachricht vor Ablauf der Kündigungsfrist).
+| Reminder, Alert
+
+| Kostenanalyse
+| Auswertung und Visualisierung der Abo-Kosten zur Identifikation von Einsparpotenzialen und doppelten Abos.
+| Auswertung, Statistik
 |===
 
 
