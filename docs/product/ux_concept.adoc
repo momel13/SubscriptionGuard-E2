@@ -110,8 +110,7 @@ _Der Nutzungskontext gemäß DIN EN ISO 9241-11 beschreibt die Lebenswirklichkei
 _Wie lösen die Nutzenden ihr Problem heute? Diese Beschreibung zeigt, was das Produkt
 verbessern soll — und macht den Mehrwert explizit._
 
-[Beschreibe den heutigen Ablauf in 3–5 Sätzen oder als kurze Schrittfolge. Beispiel: „Heute fragt Maria an der Infotheke nach freien Räumen, erhält eine Liste per E-Mail, und stellt beim Ankommen fest, dass der Raum bereits belegt ist.
-Der Prozess kostet sie im Schnitt 20 Minuten pro Tag."]
+Heute überprüfen Nutzer:innen oft erst am Monatsende ihre Kontoauszüge und stellen dabei verärgert fest, dass ein längst vergessenes Abonnement abgebucht wurde. Um das Abo zu kündigen, müssen sie mühsam in alten E-Mails nach Zugangsdaten und Vertragsbedingungen suchen. Meist stellen sie dabei fest, dass die Kündigungsfrist vor wenigen Tagen abgelaufen ist und sich der Vertrag um ein weiteres Jahr verlängert hat. Alternativ versuchen sie, Fristen in normalen Kalender-Apps einzutragen, wo diese Erinnerungen zwischen alltäglichen Terminen untergehen. Dieser unstrukturierte Prozess kostet Zeit, Nerven und vor allem unnötiges Geld.
 
 === Nutzungshürden & Risiken
 
