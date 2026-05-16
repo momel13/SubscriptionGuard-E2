@@ -222,17 +222,22 @@ _Einschränkungen sind Rahmenbedingungen, die nicht verhandelbar sind – techni
 |===
 | Version | Datum | Änderung
 
+| 1.2
+| 16.05.2026
+| ADR-009 hinzugefügt (Entscheidung für Supabase als Produktionsdatenbank) und Einschränkungen (Offline-First -> Cloud-Backend) aktualisiert
+
 | 1.1
 | 28.04.2026
 | Produktkonzept hinzugefügt
 
 | 1.0
 | 12.04.2026
-| Initiale Version nach Kick-off-Workshop
-
+| Initiale Erstellung nach Kickoff-Workshop
 |===
 
 ---
+
+
 
 _Dieses Dokument ist bewusst stabil gehalten. Änderungen sollten nur bei wesentlichen
 Richtungsentscheidungen vorgenommen werden und im Versionsverlauf dokumentiert sein._
