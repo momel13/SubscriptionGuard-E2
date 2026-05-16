@@ -193,30 +193,28 @@ technischen Entscheidungen, die sich daraus ergeben — ohne sie hier zu wiederh
 
 === Einschränkungen
 
-_Einschränkungen sind Rahmenbedingungen, die nicht verhandelbar sind — technische,
-organisatorische, rechtliche oder zeitliche Vorgaben._
+_Einschränkungen sind Rahmenbedingungen, die nicht verhandelbar sind – technische, organisatorische, rechtliche oder zeitliche Vorgaben._
 
 [cols="1,2,1", options="header"]
 |===
 | Einschränkung | Beschreibung | Kategorie
 
 | DSGVO-Konformität
-| Wir speichern und verarbeiten alle Nutzerdaten nach der europäischen Datenschutz-Grundverordnung.
+| Wir speichern und verarbeiten alle Nutzerdaten nach der europäischen Datenschutz-Grundverordnung. Das Datenbank-Hosting muss zwingend in einer EU-Region erfolgen.
 | Rechtlich
 
 | Kündigung
-|  Die App darf Abonnements nicht automatisch kündigen. Sie sendet nur Warnungen.
+| Die App darf Abonnements nicht automatisch kündigen. Sie sendet nur Warnungen.
 | Rechtlich
 
 | Bank-API
-| Eine direkte Bank-Schnidstelle (PSD2) ist sehr komplex. Deshalb ist dieses Feature nur optional.
+| Eine direkte Bank-Schnittstelle (PSD2) ist sehr komplex. Deshalb ist dieses Feature nur optional. Wir nutzen primär den CSV-Import.
 | Technisch
 
-| Offline-First
-| Die App muss primär offline funktionieren, damit die Daten sicher auf dem Gerät des Nutzers bleiben.
+| Cross-Platform & Cloud-Backend
+| Die App muss geräteübergreifend (Web und Mobile) synchronisiert sein. Die Datenhaltung erfolgt zwingend zentral in einem Cloud-Backend (Supabase/PostgreSQL), um zuverlässige Hintergrund-Erinnerungen zu garantieren.
 | Technisch
 |===
-
 
 == Versionsverlauf
 
