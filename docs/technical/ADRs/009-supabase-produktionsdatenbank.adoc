@@ -1,0 +1,52 @@
+= Architektur-Evaluierung: Produktionsdatenbank für SubscriptionGuard
+:toc: macro
+:toc-title: Inhaltsverzeichnis
+:sectnums:
+
+toc::[]
+
+== 1. Kontext und Problemstellung
+Im Rahmen der technischen Konzeption von *SubscriptionGuard* stehen sich zwei fundamentale Architekturanforderungen gegenüber: Einerseits der Schutz hochsensibler persönlicher Finanzdaten durch einen datenschutzfreundlichen Ansatz, andererseits die geforderte plattformübergreifende Verfügbarkeit (Web und Mobile) sowie eine garantierte Zuverlässigkeit von 0% Fehlerrate bei Kündigungserinnerungen[cite: 3, 293]. 
+
+Bisher wurde die Nutzung einer lokalen SQLite-Datenbank intensiv betrachtet. Dieses Dokument evaluiert im Detail, warum ein reiner SQLite-Ansatz in der Produktionsumgebung die funktionalen und qualitativen Ziele des Gesamtsystems blockiert und weshalb das bereits in *ADR-002* akzeptierte Cloud-Backend *Supabase (PostgreSQL)* sowohl technisch als auch wirtschaftlich die optimale Wahl ist[cite: 21, 363].
+
+== 2. Detaillierte Argumentation gegen SQLite in Produktion
+
+=== 2.1. Verletzung der Cross-Platform-Anforderung (Portabilität)
+* [cite_start]**Anforderung im Produktkonzept:** Das System erzwingt die Verfügbarkeit auf mehreren Plattformen wie Web und Mobile[cite: 293].
+* **Nutzer-Lebenswirklichkeit:** Die im UX-Konzept ausgearbeitete Kern-Persona *Sophie Müller* nutzt das Smartphone täglich, den Laptop jedoch gelegentlich[cite: 184]. Sie erwartet eine nahtlose Datenkonsistenz über alle Geräte hinweg[cite: 186].
+* **Das SQLite-Problem:** SQLite ist eine rein lokale, dateibasierte Datenbank[cite: 7, 343]. Wenn Daten im Browser-Speicher des Laptops (Web-App) über den CSV-Import eingepflegt werden, verbleiben sie isoliert auf diesem Gerät. Ohne ein zentrales Cloud-Backend gibt es keinen automatisierten Synchronisationsmechanismus, um diese Änderungen auf das Smartphone zu übertragen. [cite_start]Ein manueller Datei-Export und -Import widerspricht dem Qualitätsziel der einfachen Bedienung und Usability[cite: 3, 161].
+
+=== 2.2. Unzuverlässigkeit bei zeitgesteuerten Kündigungserinnerungen
+* [cite_start]**Qualitätsziel:** Die Fehlerrate bei Kündigungserinnerungen muss zwingend 0% betragen, da ausbleibende Warnungen zu direkten finanziellen Schäden für Studierende führen[cite: 3, 11].
+* **Geplante Implementierung:** Gemäß dem Programmablaufplan (PAP 2) erfolgt die Fristenprüfung als reiner Backend-Prozess vollkommen ohne Frontend-Beteiligung über einen täglichen automatisierten Timer (`node-cron`) um 06:00 Uhr[cite: 60, 63].
+* **Das SQLite-Problem:** Mobile Betriebssysteme (iOS/Android) schränken Hintergrundprozesse inaktiver Apps extrem ein, um Energie zu sparen. Eine rein lokale App-Architektur mit einer lokalen SQLite-Datei kann die zuverlässige Ausführung dieses täglichen Checks im Hintergrund nicht garantieren. [cite_start]Ein dauerhaft aktiver Cloud-Server (Node.js/Express) in Kombination mit einer erreichbaren Netzwerkdatenbank ist zwingend nötig, um Push-Nachrichten über externe Dienste (FCM/APNS) verlässlich anzustoßen[cite: 21, 66].
+
+=== 2.3. Blockade der asynchronen Fachlogik (CSV-Import)
+* [cite_start]**Architekturansatz:** Das Parsen großer Kontoauszüge und die anschließende Mustererkennung wiederkehrender Zahlungen (PAP 4) sind rechenintensiv[cite: 80, 286]. Damit das Browser-Tab des Nutzers nicht einfriert, läuft dieser Prozess explizit serverseitig im Backend ab[cite: 81, 306].
+* **Das SQLite-Problem:** Wenn das Express-Backend die hochgeladenen CSV-Dateien verarbeitet, um wiederkehrende Muster zu identifizieren, benötigt es schreibenden und lesenden Zugriff auf den persistenten Zustand des Nutzers. Läge die Datenbank als SQLite-Datei isoliert auf dem Endgerät des Nutzers, hätte das serverbasierte Backend keinerlei Zugriff darauf[cite: 343]. [cite_start]Der zweiseitige API-Vertrag setzt eine zentral zugängliche relationale Datenbank voraus[cite: 40, 342].
+
+=== 2.4. Erhöhung technischer Schulden durch SQL-Dialekt-Differenzen
+* [cite_start]**Bestehender Kompromiss:** Die parallele Nutzung von SQLite in der Entwicklung und PostgreSQL in der Produktion ist bereits als technische Schuld im Backlog dokumentiert[cite: 21, 335].
+* **Wartbarkeitsrisiko:** SQLite und PostgreSQL unterscheiden sich fundamental in ihren Datentypen und SQL-Dialekten (z. B. `SERIAL` vs. `AUTOINCREMENT`, `NUMERIC` vs. `REAL` und `TIMESTAMPTZ` vs. `TEXT`)[cite: 32, 124]. Die komplexen mathematischen Aggregationsabfragen für die Kostenanalyse (PAP 3), welche die Normalisierung der Intervalle direkt in SQL über `CASE`-Expressions lösen, müssten für zwei komplett unterschiedliche Datenbanksysteme getrennt implementiert, getestet und gewartet werden[cite: 61, 71]. [cite_start]Das gefährdet das Qualitätsziel des sauberen Codes (Clean Code)[cite: 3].
+
+== 3. Die Lösung: Supabase (PostgreSQL) als Produktionsdatenbank
+
+=== 3.1. Technische Vorteile und Architektur-Compliance
+Die Nutzung von Supabase als zentrales Cloud-Backend löst sämtliche oben genannten Architekturkonflikte und sichert gleichzeitig die Erfüllung der Qualitätsanforderungen ab:
+
+1. [cite_start]**Echte Portabilität & Synchronisation:** Web-Frontend und mobile Clients kommunizieren über eine einheitliche REST/JSON-Schnittstelle mit dem Express-Backend[cite: 27, 340]. Alle Daten werden zentral in der PostgreSQL-Instanz von Supabase verwaltet, sodass Endnutzer jederzeit geräteübergreifend den aktuellen Finanzstatus sehen[cite: 21, 342].
+2. **Garantierte Ausführung von Hintergrund-Jobs:** Das Node.js-Backend läuft permanent und führt den `deadlineCheck`-Job mittels `node-cron` absolut verlässlich jeden Morgen aus[cite: 21, 63]. Da das Backend direkten Zugriff auf die Supabase-Datenbank hat, können fällige Abos hocheffizient gefiltert und Push-Erinnerungen unabhängig vom Zustand des Endgeräts generiert werden[cite: 61, 66].
+3. **Erfüllung der DSGVO-Vorgaben:** Die berechtigten Sicherheitsbedenken bezüglich sensibler Finanzdaten werden durch gezielte Gegenmaßnahmen gelöst[cite: 124]. [cite_start]Das Supabase-Projekt wird verbindlich in der EU-Region (`eu-central-1` in Frankfurt) angelegt und ein Auftragsverarbeitungsvertrag (AVV) abgeschlossen[cite: 124, 326]. 
+
+=== 3.2. Wirtschaftliche Eignung und Ressourcenadäquanz (Free Tier)
+Für ein studentisches Software-Engineering-Projekt mit knappem Zeit- und Finanzbudget bietet der dauerhaft kostenlose Tarif (Free Plan) von Supabase eine optimale, risikofreie Grundlage[cite: 109]:
+
+* [cite_start]**Vollständige Kostenfreiheit:** Alle Kernfunktionen des gewählten Stacks (PostgreSQL-Hosting, Authentifizierung und Storage) sind im Free Tier ohne laufende Betriebskosten verfügbar, was dem Budgetrahmen des Projekts entspricht[cite: 21].
+* **Datenbank-Speicher (500 MB):** Da die Anwendung primär normalisierte Text- und numerische Werte speichert (Abonnements, Zahlungen, Budgets), ist der Speicherbedarf pro Datensatz minimal[cite: 25]. 500 MB bieten ausreichend Kapazität für Hunderttausende Datenbankzeilen und übertreffen den Bedarf der Test- und Präsentationsphase bei weitem.
+* **Integrierte Authentifizierung (Supabase Auth):** Der kostenlose Tarif erlaubt bis zu 50.000 monatlich aktive Nutzer (MAU). Da das Erstellen einer eigenen, sicheren Login- und Token-Verwaltung fehleranfällig und aufwendig ist, fungiert Supabase Auth als wesentlicher Entwicklungsbeschleuniger für das Erreichen des MVP-Status[cite: 117, 118, 124].
+* **Datei-Speicher (1 GB Storage):** Bietet ausreichend Puffer für den zweistufigen CSV-Importprozess. [cite_start]Da CSV-Rohdaten aus Datenschutzgründen ohnehin nicht dauerhaft persistiert werden, ist dieses Limit für das Projekt absolut unkritisch[cite: 327, 382].
+* **Inaktivitäts-Pausierung (Einschränkung des Free Tiers):** Kostenlose Projekte werden nach einer Woche vollständiger Inaktivität automatisch pausiert. Da sich die Instanz im Supabase-Dashboard mit einem einzigen Klick ohne Datenverlust wieder reaktivieren lässt, stellt dies für den Entwicklungszyklus und die finale Projektpräsentation kein technologisches Risiko dar.
+
+== 4. Fazit und Entscheidung
+Die Beibehaltung von SQLite in der Entwicklung ist für schnelle, lokale Testzyklen ohne Server-Setup ein sinnvoller, temporärer Kompromiss[cite: 115, 335]. Für den produktiven Betrieb (Production) ist Supabase mit PostgreSQL jedoch alternativlos[cite: 21]. Jede Abweichung von diesem Ansatz würde bedeuten, dass die Kern-Use-Cases wie der CSV-Import oder die plattformübergreifende Synchronisation funktional nicht umsetzbar sind[cite: 186, 293, 306]. Die in **ADR-002** dokumentierte Entscheidung für Supabase wird hiermit nachdrücklich und vollumfänglich bestätigt[cite: 363].   

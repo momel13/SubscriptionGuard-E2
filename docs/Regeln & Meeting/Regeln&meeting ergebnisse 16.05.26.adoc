@@ -1,0 +1,21 @@
+Wichtig Neue regeln.
+
+
+1. Aufgaben werden in Zukunft vom scrum master verteilt mit deadlines !
+2. Moritz als product owner hat das letzte wort bei der abnahme von aufgaben, er kann aber auch auf die meinung der gruppe hören.
+3. Eigenverantwortung und selbstständigkeit wird erwartet
+4.  feedback ist zugeben wer nichts sagt stimmt zu und es wird später nicht mehr geändert ----> schweigen heißt zustimmen ! 
+5.  im falle das keine aufgaben verteilt werden vom scrum master hat man sich selbstständig zukümmern das man eine der aufgaben die der product owner festgelegt in den sprint pdf macht im team oder alleine. vorher reinschreiben "hey, ich würde aufgabe 4.5 übernehmen, da keiner aufgaben verteilt hat. wenn jemand mitmachen will gerne melden"
+6. in zukunft ist der jeweilige channel zu nutzen um fragen zu stellen, feedback zu geben oder sich für aufgaben zu melden.
+
+
+
+
+
+Meeting Ergebnisse 16.05.26
+
+
+1. Es wurden neue Regeln für die Arbeitsweise im Team festgelegt, um die Eigenverantwortung und Selbstständigkeit zu fördern. Aufgaben werden künftig vom Scrum Master verteilt, falls keine vergeben wurden sind, muss sich jedes Teammitglied selbstständig eine Aufgabe suchen und die Gruppe darüber informieren.
+2. appel an die Eigenverantwortung: Feedback ist wichtig, wer nichts sagt, stimmt zu. Schweigen heißt zustimmen.
+3. supabase wird als Produktionsdatenbank genutzt, da es die Anforderungen an Portabilität, Zuverlässigkeit und DSGVO-Konformität erfüllt. SQLite ist für die Produktion nicht geeignet, da es die funktionalen und qualitativen Ziele des Systems blockiert. abgesegnet vom tech lead und product owner.
+4. Meeting nur bei bedarf und aktiver beteiligung der teammitglieder, ansonsten wird es abgesagt oder findet keins statt. 
