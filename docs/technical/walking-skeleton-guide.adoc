@@ -1,0 +1,203 @@
+= Technische Anleitung: Umsetzung des Backend Walking Skeleton (Meilenstein 3.6)
+:author: Tech Lead
+:toc: macro
+:toc-title: Inhaltsverzeichnis
+:sectnums:
+
+toc::[]
+
+== 1. Zielstellung & Aufgabenverteilung (Walking Skeleton)
+Das Frontend ist für den Meilenstein 3.6 bereits vorbereitet. Für das Backend-Team stehen nun folgende Aufgaben an, um den Durchstich komplett zu machen:
+
+* [ ] **Backend-Endpunkt GET `/api/dashboard` erstellen.**
+* [x] **Supabase-Tabellen/Seed-Daten für Kategorien, Abos, Budget und Notifications.** -> _(WICHTIG: Bereits vom Tech Lead in der Live-Cloud erledigt! Ihr müsst keine Tabellen mehr anlegen.)_
+* [ ] **Backend-Mapping von Supabase/SQL-Daten auf das erwartete Frontend-Format (`camelCase`).**
+* [ ] **Frontend einmal an echte API statt Mock-Daten anschließen und testen.**
+
+[WARNING]
+====
+❗❗❗ Es ist extrem wichtig, dass ihr bei der Umsetzung die `architecture.adoc` und `design.adoc` berücksichtigt und euch an die dortigen Vorgaben haltet! ❗❗❗
+====
+
+== 2. Status der Cloud-Infrastruktur & Umgebungsvariablen
+
+Die Live-Datenbank in der Cloud (Region Frankfurt, eu-central-1) läuft (`Status: Healthy`). Alle Tabellenstrukturen aus dem Domänenmodell existieren bereits und sind mit Seed-Daten (z.B. Kategorien) befüllt. 
+
+Damit euer lokaler Express-Server mit dieser Cloud-Datenbank sprechen kann, legt im Root-Verzeichnis des Backend-Ordners eine Datei namens `.env` an (diese **muss** in der `.gitignore` stehen!).
+
+Tragt dort exakt folgende Konfiguration ein:
+
+[source,env]
+----
+PORT=5000
+SUPABASE_URL=https://ivymlxrvohpcbgocoibh.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_3MOV2eYLrQsGP0WoB6ZvwQ_5ddPXyTh
+DATABASE_URL=postgresql://postgres.ivymlxrvohpcbgocoibh:[PASSWORD]@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+----
+
+=== Wofür sind diese Werte und Links da?
+
+* *`PORT=5000`:* Der lokale Port für euren Node/Express-Server. Das Frontend wird Anfragen an `http://localhost:5000` schicken.
+* *`SUPABASE_URL`:* Die Basis-URL unseres Cloud-Projekts. Das Supabase-SDK im Backend braucht diese, um Authentifizierungs-Anfragen (JWT) an den richtigen Server zu leiten.
+* *`SUPABASE_ANON_KEY`:* Unser öffentlicher Projekt-Schlüssel. Er identifiziert unsere App gegenüber Supabase. Er ist unkritisch und darf geteilt werden.
+* *`DATABASE_URL`:* Der direkte Verbindungs-String für unsere PostgreSQL-Queries. Wir nutzen hier extra den *Transaction Pooler* (Port `6543`), da dieser IPv4-kompatibel ist und somit keine Netzwerkprobleme bei euren lokalen Internetanschlüssen verursacht.
+
+[NOTE]
+====
+Das Master-Passwort für die Datenbank teile ich euch über unseren internen **Discord-Chat** mit! Ersetzt in eurer `.env`-Datei den Platzhalter `[PASSWORD]` (inklusive der eckigen Klammern) durch dieses Passwort.
+====
+
+== 3. Implementierungsschritte für das Team
+
+=== 3.1. Lokales Backend-Projekt initialisieren
+Wechselt in das Verzeichnis `backend/` und installiert die nötigen Pakete:
+
+[source,bash]
+----
+npm init -y
+npm install express typescript @types/express @types/node ts-node @supabase/supabase-js dotenv cors pg @types/pg
+npx tsc --init
+----
+
+=== 3.2. Authentifizierungs-Middleware (Sicherheit)
+Erstellt `backend/src/middleware/auth.ts`. Diese prüft, ob das Frontend einen gültigen Token mitsendet:
+
+[source,typescript]
+----
+import { Request, Response, NextFunction } from 'express';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
+export interface AuthenticatedRequest extends Request {
+    user?: { id: string; email?: string; };
+}
+
+export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing Authorization header.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) return res.status(401).json({ error: 'Invalid token.' });
+        
+        req.user = { id: user.id, email: user.email };
+        next();
+    } catch (err) {
+        return res.status(500).json({ error: 'Auth error.' });
+    }
+}
+----
+
+=== 3.3. API-Endpunkt & Daten-Mapping (snake_case -> camelCase)
+Erstellt `backend/src/routes/dashboard.ts`. Hier holen wir die Daten aus der DB und mappen sie zwingend auf das Format, das das Frontend erwartet.
+
+[source,typescript]
+----
+import { Router, Response } from 'express';
+import { Pool } from 'pg';
+import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
+
+const router = Router();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+router.get('/dashboard', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user!.id;
+
+    try {
+        const categoriesResult = await pool.query('SELECT id, name, icon, color FROM public.categories');
+        
+        const subsQuery = `
+            SELECT id, category_id, name, provider, cost, currency, payment_interval, 
+                   start_date, cancel_deadline, contract_end, auto_renewal, usage_rating, is_paused 
+            FROM public.subscriptions 
+            WHERE user_id = $1
+        `;
+        const subsResult = await pool.query(subsQuery, [userId]);
+
+        // MAPPING auf Frontend-Vertrag (camelCase)
+        const mappedSubscriptions = subsResult.rows.map(row => ({
+            id: row.id,
+            categoryId: row.category_id,
+            name: row.name,
+            provider: row.provider,
+            cost: parseFloat(row.cost),
+            currency: row.currency,
+            interval: row.payment_interval,
+            startDate: row.start_date.toISOString().split('T')[0],
+            cancelDeadline: row.cancel_deadline ? row.cancel_deadline.toISOString().split('T')[0] : null,
+            contractEnd: row.contract_end ? row.contract_end.toISOString().split('T')[0] : null,
+            autoRenewal: row.auto_renewal,
+            usageRating: row.usage_rating,
+            isPaused: row.is_paused
+        }));
+
+        const responsePayload = {
+            categories: categoriesResult.rows,
+            subscriptions: mappedSubscriptions,
+            notifications: [],
+            importCandidates: [],
+            budgetTarget: 80
+        };
+
+        return res.json(responsePayload);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'DB Fetch Error' });
+    }
+});
+
+export default router;
+----
+
+=== 3.4. Express-Server Hauptdatei
+Erstellt `backend/src/app.ts`, um den Server zu starten:
+
+[source,typescript]
+----
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import dashboardRouter from './routes/dashboard';
+
+dotenv.config();
+
+const app = express();
+const port = process.env.PORT || 5000;
+
+app.use(cors({ origin: '*' }));
+app.use(express.json());
+app.use('/api', dashboardRouter);
+
+app.listen(port, () => {
+    console.log(`Backend läuft auf Port ${port}`);
+});
+----
+
+=== 3.5. Frontend ans Backend anschließen
+Zuletzt muss das Frontend so umgestellt werden, dass es mit dem lokalen Express-Server kommuniziert:
+
+[source,html]
+----
+<script>
+window.SubGuardDataSource = {
+  name: 'Live Express Backend',
+  async loadDashboard() {
+    return fetch('http://localhost:5000/api/dashboard', {
+      headers: {
+        'Authorization': 'Bearer <EUER_TEST_TOKEN_AUS_SUPABASE>' 
+      }
+    }).then(res => {
+      if (!res.ok) throw new Error('API-Request fehlgeschlagen');
+      return res.json();
+    });
+  }
+};
+</script>
+----
