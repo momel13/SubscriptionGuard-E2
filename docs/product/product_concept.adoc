@@ -172,23 +172,23 @@ technischen Entscheidungen, die sich daraus ergeben — ohne sie hier zu wiederh
 
 | Performance
 | Das Dashboard muss die Kosten und Statistiken schnell anzeigen.
-| Die Ladezeit fur das Haupt-Dashboard erfolgt sehr schnell und ohne spürbareVerzögerung.
+| Die Ladezeit für das Haupt-Dashboard erfolgt sehr schnell und ohne spürbare Verzögerung.
 
 | Benutzerfreundlichkeit
 | Die App muss sehr einfach sein. Studenten sollen ihre Abos schnell ohne Hilfe verwalten.
-| Ein Nutzer kann ein neues Abo schnell und intuitiv (ohne externe Hilfe) anlegen.
+| Ein Nutzer kann ein neues Abo schnell und intensiv (ohne externe Hilfe) anlegen.
 
 | Datensicherheit
 | Finanzielle Daten sind sehr privat. Wir müssen sie gegen fremden Zugriff schützen.
-| 100% der sensiblen Daten werden lokal verschlüsselt gespeichert.
+| Sichere Transportverschlüsselung (HTTPS/TLS) und strikte Mandantentrennung auf Datenbankebene über Row Level Security (RLS) in Supabase.
 
 | Wartbarkeit
 | Der Code muss sauber sein (Clean Code).
-| Neue Kategorien (z.B. „Gaming") können einfach und zeitnah zum System hinzugefügt werden.
+| Neue Kategorien (z.B. „Gaming") können einfach und zeitnah zum System hinzugefügt werden (datenbankgetriebenes Modell).
 
 | Zuverlässigkeit
 | Die App muss stabil sein.
-|Die Fehlerrate bei Kündigungserinnerungen muss 0% sein.
+| Die Fehlerrate bei Kündigungserinnerungen muss 0% sein.
 |===
 
 === Einschränkungen

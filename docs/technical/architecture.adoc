@@ -35,10 +35,8 @@ ausfuehrlich dokumentiert ist.
 
 |*Datenverschluesselung sensibler Finanzdaten* +
 _(Datensicherheit)_
-|Da Finanzdaten hochsensibel sind und lokal auf dem Geraet liegen, reicht eine einfache
-Textspeicherung nicht aus. Dies erfordert die Integration von Datenbankverschluesselung
-(z.B. SQLCipher fuer SQLite) oder sicheren nativen Storage-APIs des Betriebssystems.
-|<<adr-008,ADR-008>>
+|Da die Daten nicht mehr lokal auf dem Endgerät liegen, sondern zentral gespeichert werden, erfordert dies eine sichere Transportverschluesselung (HTTPS/TLS) und eine strikte Mandantentrennung in der Datenbank ueber Row Level Security (RLS) in Supabase.
+|<<adr-002,ADR-002>>
 
 |*Massen-Datenverarbeitung beim CSV-Import* +
 _(Verzicht auf PSD2)_
@@ -234,10 +232,10 @@ sauber schuetzen.
 |Mittel
 |Globale Express Error Middleware, saubere Promise-Behandlung, strukturierte API-Fehler.
 
-|SQL-Dialekt-Differenzen zwischen SQLite und PostgreSQL
+|SQL-Dialekt-Differenzen
 |Mittel
 |Mittel
-|Komplexe Queries auf Postgres ausrichten oder Query-Builder/Migrationswerkzeug nutzen.
+|PostgreSQL wird durch die Nutzung der Supabase CLI auch lokal via Docker erzwungen, wodurch Dialekt-Abweichungen ausgeschlossen sind.
 
 |Chart.js Bundle-Groesse
 |Mittel
@@ -276,10 +274,6 @@ sauber schuetzen.
 Komplexitaet erhoehen.
 |Optional Supabase Realtime pruefen.
 
-|SQLite in Entwicklung, PostgreSQL in Produktion
-|SQLite beschleunigt lokalen Start, kann aber SQL-Unterschiede erzeugen.
-|Mittelfristig Postgres lokal via Docker/Supabase CLI nutzen.
-
 |Frontend-Validierung nicht vollstaendig
 |Der Primaerschutz liegt bewusst im Backend. Frontend-Validierung wird zuerst auf zentrale Felder
 beschraenkt.
@@ -308,8 +302,8 @@ rectangle "SubscriptionGuard\nWeb-Anwendung" as System {
   [Deadline Job] as Job
 }
 
-database "PostgreSQL / Supabase\nProduktion" as Db
-database "SQLite\nlokale Entwicklung" as Sqlite
+database "PostgreSQL / Supabase\nProduktion (Cloud)" as Db
+database "PostgreSQL / Supabase CLI\nlokale Entwicklung (Docker)" as LocalDb
 cloud "Supabase Auth" as Auth
 cloud "FCM / APNS / Web Push" as Push
 file "CSV-Datei\nKontoauszug / Excel" as Csv
@@ -320,7 +314,7 @@ Csv --> Frontend : Datei auswaehlen
 Frontend --> Backend : REST / JSON / FormData
 Frontend --> Auth : Login / Session
 Backend --> Db : SQL / pg-Treiber
-Backend --> Sqlite : SQL im Dev-Modus
+Backend --> LocalDb : SQL im Dev-Modus
 Backend --> Auth : Token pruefen
 Job --> Db : Fristen pruefen
 Backend --> Push : Benachrichtigung ausloesen
@@ -336,7 +330,7 @@ Backend --> Export : Exportdaten liefern
 |Schnittstelle |Typ |Beschreibung |Protokoll / Format
 
 |REST API
-|Intern zwischen Frontend und Backend
+|Intern zwischen Frontend and Backend
 |Einzige fachliche Schnittstelle fuer Abos, Kategorien, Analyse, Import, Budget, Notifications
 und Settings.
 |HTTPS / JSON, Upload via `FormData`.
@@ -346,15 +340,15 @@ und Settings.
 |Login, Registrierung, Token-Verwaltung und Session-Kontext.
 |HTTPS / JWT.
 
-|PostgreSQL / Supabase
+|PostgreSQL / Supabase (Prod)
 |Persistenz
-|Speichert Nutzer, Abos, Kategorien, Zahlungen, Budgets und Notifications.
+|Zentrale Cloud-Datenbank für Produktivdaten (Nutzer, Abos, Kategorien, Zahlungen, Budgets und Notifications).
 |SQL / pg-Treiber oder Supabase Client.
 
-|SQLite
+|Lokales PostgreSQL (Supabase CLI)
 |Lokale Entwicklung
-|Option fuer schnelle lokale Entwicklungszyklen ohne Server-Setup.
-|Dateibasierte SQL-Datenbank.
+|Garantierte Dialekt-Konsistenz zur Produktionsdatenbank ueber eine lokale Docker-Instanz fuer das Entwicklungsteam.
+|Docker / SQL / pg-Treiber.
 
 |FCM / APNS / Web Push
 |Externes Push-System
@@ -382,7 +376,7 @@ skinparam componentStyle rectangle
 
 rectangle "Praesentationsschicht\nReact, TypeScript, Chart.js, Mantine" as Presentation
 rectangle "Logikschicht\nNode.js, Express, TypeScript, node-cron" as Logic
-rectangle "Datenschicht\nPostgreSQL/Supabase, SQLite Dev" as Data
+rectangle "Datenschicht\nPostgreSQL/Supabase (Prod & Dev)" as Data
 rectangle "Externe Dienste\nSupabase Auth, FCM/APNS/Web Push" as External
 
 Presentation --> Logic : REST / JSON
@@ -408,7 +402,7 @@ Notification-Erzeugung.
 
 |Datenschicht
 |Persistenz, Constraints, Indizes, relationale Integritaet und datenbanknahe Aggregation.
-|PostgreSQL/Supabase, SQLite fuer Dev.
+|PostgreSQL/Supabase (lokal via Docker & Cloud Prod).
 
 |Externe Dienste
 |Authentifizierung, Push-Zustellung und optional spaetere Cloud-/Realtime-Funktionen.
@@ -454,8 +448,8 @@ werden.
 |ADR-002
 
 |Datenbank Entwicklung
-|SQLite oder lokal PostgreSQL
-|SQLite ist schnell fuer den Start; lokal PostgreSQL reduziert spaeter SQL-Dialektrisiken.
+|Lokales PostgreSQL (Supabase CLI / Docker)
+|Eliminiert SQL-Dialektdifferenzen zwischen Dev und Prod komplett. SQLite wurde verworfen, um Fehlerquellen bei komplexen Queries zu vermeiden.
 |ADR-002
 
 |Auth
@@ -507,9 +501,7 @@ Synchronisationsaufwand fuer API-Vertraege entsteht.
 *Kontext:* Eigene Authentifizierung mit JWT, Password Reset, Token Refresh und sicherem
 DB-Hosting ist fehleranfaellig und fuer ein studentisches Projekt zeitintensiv.
 
-*Entscheidung:* Authentifizierung und PostgreSQL-Hosting werden an Supabase ausgelagert. Ein
-eigenes Express-Backend bleibt fuer komplexe Logik wie CSV-Parsing, Analyse und Cron-Jobs
-erhalten.
+*Entscheidung:* Authentifizierung und PostgreSQL-Hosting werden an Supabase ausgelagert. Dies gilt sowohl fuer die Produktion (Cloud-Instanz) als auch fuer die lokale Entwicklung via Supabase CLI (lokaler Docker-Container). Ein eigenes Express-Backend bleibt fuer komplexe Logik wie CSV-Parsing, Analyse und Cron-Jobs erhalten.
 
 *Alternativen:* Eigene PostgreSQL-Instanz plus Passport/Auth-Library. Verworfen fuer den MVP,
 weil Setup- und Sicherheitsaufwand hoeher sind.
@@ -567,7 +559,7 @@ Verantwortung, muessen also gut getestet werden.
 
 *Kontext:* F1-F8 bilden natuerliche Produktbereiche. Die UI braucht viele Standard-Controls.
 
-*Entscheidung:* Das Frontend wird nach Features strukturiert (`subscriptions`, `analysis`,
+*Entscheidung:* Das Frontend wird nach Features structured (`subscriptions`, `analysis`,
 `budget`, `import`, `notifications`, `settings`, `auth`) und nutzt Mantine fuer robuste
 UI-Bausteine.
 
