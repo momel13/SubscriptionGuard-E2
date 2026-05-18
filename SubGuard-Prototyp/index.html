@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SubscriptionGuard — Prototyp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --fg: #e6e8ee;
+    --muted: rgba(230, 232, 238, 0.6);
+    --brand: #6366f1;
+    --accent: #22d3ee;
+    --purple: #a855f7;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --teal: #10b981;
+    --glass-bg: rgba(255, 255, 255, 0.04);
+    --glass-border: rgba(255, 255, 255, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.18), transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.15), transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(168, 85, 247, 0.12), transparent 50%),
+      var(--bg);
+    background-attachment: fixed;
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 16px;
+  }
+  .gradient-text {
+    background: linear-gradient(90deg, #6366f1, #22d3ee 60%, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hover-lift {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    cursor: pointer;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: 0 12px 40px -12px rgba(99, 102, 241, 0.45);
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 8px; }
+
+  .app { display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 64px 1fr; min-height: 100vh; }
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; }
+  .brand-icon {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    display: grid; place-items: center;
+    box-shadow: 0 8px 24px -8px rgba(99, 102, 241, 0.6);
+  }
+  .brand-icon svg { width: 18px; height: 18px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: transparent; border: 0; color: var(--fg); cursor: pointer;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.05); }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 13px;
+  }
+
+  .sidebar {
+    border-right: 1px solid var(--glass-border);
+    padding: 16px 12px;
+    backdrop-filter: blur(16px);
+    overflow-y: auto;
+  }
+  .nav-label { font-size: 11px; color: var(--muted); padding: 4px 12px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    color: var(--fg); cursor: pointer; font-size: 14px;
+    margin-top: 2px;
+    border: 0; background: transparent; width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); }
+  .nav-item.active {
+    background: linear-gradient(90deg, rgba(99,102,241,0.3), rgba(99,102,241,0.05));
+    color: white;
+  }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto; background: var(--accent); color: #001017;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 7px; border-radius: 6px;
+  }
+  .nav-tip { margin-top: 12px; padding: 14px; font-size: 13px; }
+  .nav-tip-title { font-weight: 600; margin-bottom: 4px; }
+  .nav-tip-text { color: var(--muted); font-size: 12px; }
+
+  .main { padding: 24px; max-width: 1280px; margin: 0 auto; width: 100%; }
+  .page-header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+  .page-title { font-size: 1.75rem; font-weight: 700; margin: 0; }
+  .page-subtitle { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  .grid { display: grid; gap: 20px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-7-5 { grid-template-columns: 7fr 5fr; }
+  .grid-5-7 { grid-template-columns: 5fr 7fr; }
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-7-5, .grid-5-7 { grid-template-columns: 1fr; }
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+
+  .stat-card { padding: 20px; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+  .stat-value { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
+  .stat-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .stat-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: rgba(99,102,241,0.15); color: var(--brand);
+  }
+  .stat-icon.accent { background: rgba(34,211,238,0.15); color: var(--accent); }
+  .stat-icon.purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .stat-icon.yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+
+  .card-pad { padding: 20px; }
+  .card-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .text-btn { background: transparent; border: 0; color: var(--brand); cursor: pointer; font-size: 13px; font-weight: 600; }
+
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+  .row + .row { border-top: 1px solid rgba(255,255,255,0.04); }
+  .row-left { display: flex; align-items: center; gap: 12px; }
+  .row-name { font-weight: 600; }
+  .row-sub { font-size: 12px; color: var(--muted); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge.red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge.yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .badge.teal { background: rgba(16,185,129,0.15); color: var(--teal); }
+  .badge.brand { background: rgba(99,102,241,0.15); color: var(--brand); }
+  .badge.dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+  .btn {
+    border: 0; cursor: pointer;
+    padding: 10px 16px; border-radius: 10px;
+    font-weight: 600; font-size: 14px;
+    color: white;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.subtle { background: transparent; color: var(--fg); }
+  .btn.subtle:hover { background: rgba(255,255,255,0.05); }
+
+  .progress {
+    width: 100%; height: 12px; border-radius: 99px;
+    background: rgba(255,255,255,0.06); overflow: hidden;
+    position: relative;
+  }
+  .progress-bar {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    transition: width 0.4s ease;
+  }
+  .progress-bar.red { background: linear-gradient(90deg, #ef4444, #f59e0b); }
+  .progress-bar.teal { background: linear-gradient(90deg, var(--teal), var(--accent)); }
+
+  .subs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 1100px) { .subs-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 700px) { .subs-grid { grid-template-columns: 1fr; } }
+  .sub-card { padding: 18px; }
+  .sub-head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .sub-left { display: flex; gap: 10px; min-width: 0; }
+  .sub-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 22px;
+    flex-shrink: 0;
+  }
+  .sub-meta { min-width: 0; }
+  .sub-name { font-weight: 700; }
+  .sub-provider { font-size: 12px; color: var(--muted); }
+  .sub-cost { font-size: 1.4rem; font-weight: 800; margin-top: 8px; }
+  .sub-per { font-size: 11px; color: var(--muted); }
+
+  .toolbar { display: flex; gap: 12px; padding: 14px; flex-wrap: wrap; align-items: center; }
+  .search {
+    flex: 1; min-width: 200px;
+    padding: 10px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+    color: var(--fg); font-size: 14px;
+  }
+  .search::placeholder { color: var(--muted); }
+  select.filter {
+    padding: 10px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+    color: var(--fg); font-size: 14px;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; animation: fade 0.2s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .chart-box { height: 280px; position: relative; }
+
+  .ring { position: relative; width: 200px; height: 200px; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring-bg { stroke: rgba(255,255,255,0.06); }
+  .ring-label {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    text-align: center;
+  }
+  .ring-label small { color: var(--muted); font-size: 11px; display: block; }
+  .ring-label b { font-size: 1.4rem; font-weight: 800; }
+
+  .notif { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
+  .notif + .notif { border-top: 1px solid rgba(255,255,255,0.04); }
+  .notif.unread { background: rgba(99,102,241,0.06); }
+  .notif-icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; }
+  .notif-body { display: flex; gap: 12px; align-items: center; min-width: 0; }
+  .notif-msg { font-weight: 600; }
+  .notif-meta { font-size: 12px; color: var(--muted); }
+
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .form-field { display: grid; gap: 6px; }
+  .form-field label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .switch-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.035);
+  }
+  .mini-table { display: grid; gap: 8px; }
+  .candidate {
+    display: grid; grid-template-columns: 1.3fr 0.8fr 0.7fr auto; gap: 12px;
+    align-items: center; padding: 12px 0;
+  }
+  .candidate + .candidate { border-top: 1px solid rgba(255,255,255,0.05); }
+  @media (max-width: 760px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .candidate { grid-template-columns: 1fr; }
+  }
+
+  .demo-bar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    padding: 8px 16px; font-size: 12px; color: var(--muted);
+    background: rgba(11,13,18,0.7); border: 1px solid var(--glass-border);
+    border-radius: 99px; backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <span class="gradient-text">SubscriptionGuard</span>
+      <span class="badge brand" style="margin-left:8px;">Prototyp</span>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" title="Suche">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </button>
+      <button class="icon-btn" title="Theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <div class="avatar">DS</div>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="nav-label">Navigation</div>
+    <button class="nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" data-view="subscriptions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Abonnements
+    </button>
+    <button class="nav-item" data-view="analysis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15.9A9 9 0 1 1 8.1 3"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+      Analyse
+    </button>
+    <button class="nav-item" data-view="budget">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><circle cx="16" cy="14" r="2"/></svg>
+      Budget
+    </button>
+    <button class="nav-item" data-view="import">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import
+    </button>
+    <button class="nav-item" data-view="notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      Erinnerungen
+      <span class="nav-badge">2</span>
+    </button>
+    <button class="nav-item" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+      Einstellungen
+    </button>
+    <div class="glass nav-tip">
+      <div class="nav-tip-title">Tipp</div>
+      <div class="nav-tip-text">Lade deinen Kontoauszug als CSV hoch, um Abos automatisch zu erkennen.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <section class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Willkommen zurück 👋</h1>
+          <div class="page-subtitle">Überblick über alle laufenden Abos, Fristen und dein Budget.</div>
+        </div>
+        <button class="btn" data-go="subscriptions">+ Neues Abo</button>
+      </div>
+
+      <div class="grid grid-4" id="stat-grid"></div>
+
+      <div class="grid grid-7-5" style="margin-top:20px;">
+        <div class="glass card-pad">
+          <div class="card-head">
+            <h3 class="card-title">Nächste Fristen</h3>
+            <button class="text-btn" data-go="subscriptions">Alle anzeigen →</button>
+          </div>
+          <div id="deadline-list"></div>
+        </div>
+
+        <div class="glass card-pad">
+          <div class="card-head">
+            <h3 class="card-title">Budget</h3>
+            <button class="text-btn" data-go="budget">Verwalten</button>
+          </div>
+          <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+            <div class="ring" style="width:160px;height:160px;">
+              <svg width="160" height="160" viewBox="0 0 100 100">
+                <defs>
+                  <linearGradient id="ringGrad" x1="0" x2="1">
+                    <stop offset="0" stop-color="#6366f1"/>
+                    <stop offset="1" stop-color="#22d3ee"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="42" stroke-width="10" fill="none" class="ring-bg"/>
+                <circle cx="50" cy="50" r="42" stroke-width="10" fill="none" id="ring-circle"
+                  stroke="url(#ringGrad)" stroke-linecap="round"
+                  stroke-dasharray="264" stroke-dashoffset="40" />
+              </svg>
+              <div class="ring-label">
+                <div><small>Verbraucht</small><b id="ring-pct">85%</b></div>
+              </div>
+            </div>
+            <div style="flex:1; min-width:180px;">
+              <div class="row"><span class="row-sub">Ausgegeben</span><b id="b-spent">67,87 €</b></div>
+              <div class="row"><span class="row-sub">Monatsbudget</span><b id="b-target">80,00 €</b></div>
+              <div class="progress" style="margin-top:8px;"><div class="progress-bar teal" id="b-bar" style="width:85%;"></div></div>
+              <div class="row" style="border:0; padding-top:8px;">
+                <span class="badge teal" id="b-status">Im Budget</span>
+                <span class="row-sub" id="b-remaining">12,13 € übrig</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass card-pad" style="margin-top:20px;">
+        <div class="card-head">
+          <h3 class="card-title">Top-Empfehlungen</h3>
+          <button class="text-btn" data-go="analysis">Zur Analyse</button>
+        </div>
+        <div id="reco-list"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-subscriptions">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Abonnements</h1>
+          <div class="page-subtitle">Alle laufenden Verträge, Fristen und Pausierungen.</div>
+        </div>
+        <button class="btn">+ Neues Abo</button>
+      </div>
+
+      <div class="glass toolbar">
+        <input class="search" placeholder="Abo oder Anbieter suchen…" oninput="filterSubs(this.value)" />
+        <select class="filter" id="category-filter" onchange="filterCat(this.value)"></select>
+      </div>
+
+      <div class="subs-grid" id="subs-grid" style="margin-top:20px;"></div>
+
+      <div class="glass card-pad" style="margin-top:20px;">
+        <div class="card-head">
+          <h3 class="card-title">Abo anlegen</h3>
+          <span class="badge brand">UC1 / PAP 1</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Name</label>
+            <input class="search" value="Disney+ Premium" />
+          </div>
+          <div class="form-field">
+            <label>Anbieter</label>
+            <input class="search" value="Disney" />
+          </div>
+          <div class="form-field">
+            <label>Kategorie</label>
+            <select class="filter" id="subscription-category-select"></select>
+          </div>
+          <div class="form-field">
+            <label>Nutzung</label>
+            <select class="filter">
+              <option>Häufig</option><option>Selten</option><option>Nie</option><option>Nicht bewertet</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Kosten</label>
+            <input class="search" type="number" value="8.99" />
+          </div>
+          <div class="form-field">
+            <label>Intervall</label>
+            <select class="filter"><option>MONTHLY</option><option>YEARLY</option><option>QUARTERLY</option><option>WEEKLY</option></select>
+          </div>
+          <div class="form-field">
+            <label>Kündigungsfrist</label>
+            <input class="search" type="date" value="2026-06-15" />
+          </div>
+          <div class="form-field">
+            <label>Vertragsende</label>
+            <input class="search" type="date" value="2026-07-15" />
+          </div>
+          <div class="form-field full">
+            <div class="switch-row">
+              <span>Automatische Verlängerung</span>
+              <input type="checkbox" checked />
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn">Speichern</button>
+          <button class="btn subtle">Pausieren</button>
+          <button class="btn subtle">Löschen</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-analysis">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Analyse</h1>
+          <div class="page-subtitle">Wo dein Geld hinfliesst — und wo du sparen kannst.</div>
+        </div>
+      </div>
+
+      <div class="grid grid-4" id="analysis-stats"></div>
+
+      <div class="grid grid-5-7" style="margin-top:20px;">
+        <div class="glass card-pad">
+          <h3 class="card-title">Kosten nach Kategorie</h3>
+          <div class="chart-box"><canvas id="doughnut"></canvas></div>
+        </div>
+        <div class="glass card-pad">
+          <h3 class="card-title">Kostenverlauf (Projektion)</h3>
+          <div class="chart-box"><canvas id="line"></canvas></div>
+        </div>
+      </div>
+
+      <div class="glass card-pad" style="margin-top:20px;">
+        <h3 class="card-title">Aufschlüsselung</h3>
+        <div id="breakdown"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-budget">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Budget</h1>
+          <div class="page-subtitle">Setze ein Monatsziel und behalte deine Fixkosten im Blick.</div>
+        </div>
+      </div>
+
+      <div class="grid grid-7-5">
+        <div class="glass card-pad">
+          <h3 class="card-title">Aktueller Status</h3>
+          <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+            <div class="ring">
+              <svg width="200" height="200" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" stroke-width="10" fill="none" class="ring-bg"/>
+                <circle cx="50" cy="50" r="42" stroke-width="10" fill="none"
+                  stroke="url(#ringGrad)" stroke-linecap="round"
+                  stroke-dasharray="264" stroke-dashoffset="40" />
+              </svg>
+              <div class="ring-label">
+                <div><small>Verbraucht</small><b>85%</b></div>
+              </div>
+            </div>
+            <div style="flex:1; min-width:220px;">
+              <div class="row"><span class="row-sub">Ausgegeben</span><b>67,87 €</b></div>
+              <div class="row"><span class="row-sub">Monatsbudget</span><b>80,00 €</b></div>
+              <div class="progress" style="margin-top:10px;"><div class="progress-bar teal" style="width:85%;"></div></div>
+              <div class="row" style="border:0;">
+                <span class="badge teal">Im Budget</span>
+                <span class="row-sub">12,13 € Spielraum</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass card-pad">
+          <h3 class="card-title">Monatsbudget setzen</h3>
+          <label style="font-size:13px; color:var(--muted);">Zielbetrag pro Monat</label>
+          <input class="search" type="number" value="80" style="margin-top:6px;" />
+          <label style="font-size:13px; color:var(--muted); display:block; margin-top:12px;">Sparziel</label>
+          <input class="search" type="number" value="20" style="margin-top:6px;" />
+          <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn">Speichern</button>
+            <button class="btn subtle">Budget entfernen</button>
+          </div>
+          <p style="font-size:12px; color:var(--muted); margin-top:14px;">
+            Pausierte Abos werden nicht in die Ausgaben einbezogen (vgl. UC5/PAP 5).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-import">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Import</h1>
+          <div class="page-subtitle">Kontoauszug als CSV hochladen — wiederkehrende Zahlungen werden erkannt.</div>
+        </div>
+      </div>
+
+      <div class="glass card-pad">
+        <div style="border: 1px dashed rgba(255,255,255,0.18); border-radius: 16px; padding: 48px; text-align: center;">
+          <div style="width:64px;height:64px;border-radius:18px;display:inline-grid;place-items:center;background:linear-gradient(135deg,#6366f1,#22d3ee);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <h3 style="margin: 16px 0 4px 0; font-size: 1.1rem;">CSV hierher ziehen oder klicken</h3>
+          <div style="color: var(--muted); font-size: 13px;">Max. 5 MB · UTF-8 empfohlen</div>
+          <button class="btn" style="margin-top:18px;" onclick="alert('Prototyp — im echten Build erkennt das Backend wiederkehrende Zahlungen.')">Demo-Datei wählen</button>
+        </div>
+      </div>
+
+      <div class="glass card-pad" style="margin-top:20px;">
+        <div class="card-head">
+          <h3 class="card-title">Import-Kandidaten</h3>
+          <span class="badge brand">UC4 / PAP 4</span>
+        </div>
+        <div id="import-candidates" class="mini-table"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-notifications">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Erinnerungen</h1>
+          <div class="page-subtitle">Kündigungsfristen, Zahlungen, Preisänderungen und Budgetwarnungen.</div>
+        </div>
+        <span class="badge brand">2 neu</span>
+      </div>
+
+      <div class="glass" style="overflow:hidden;" id="notif-list"></div>
+
+      <div class="glass card-pad" style="margin-top:20px;">
+        <div class="card-head">
+          <h3 class="card-title">Browser Push</h3>
+          <span class="badge yellow">Optional</span>
+        </div>
+        <div class="row" style="border:0;">
+          <div>
+            <div class="row-name">Push-Berechtigung</div>
+            <div class="row-sub">Notification Center bleibt immer als Fallback aktiv.</div>
+          </div>
+          <button class="btn subtle">Aktivieren</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title gradient-text">Einstellungen</h1>
+          <div class="page-subtitle">Profil, Währung, Erinnerungen und Datensicherung.</div>
+        </div>
+      </div>
+
+      <div class="glass card-pad">
+        <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+          <div style="text-align:center;">
+            <div class="avatar" style="width:120px;height:120px;font-size:36px;margin-bottom:8px;">DS</div>
+            <div style="font-size:12px;color:var(--muted);">demo@subscriptionguard.app</div>
+          </div>
+          <div style="flex:1; min-width:280px; display:grid; gap:10px;">
+            <label style="font-size:13px;color:var(--muted);">Name</label>
+            <input class="search" value="Demo Studentin" />
+            <label style="font-size:13px;color:var(--muted);">E-Mail</label>
+            <input class="search" value="demo@subscriptionguard.app" />
+            <label style="font-size:13px;color:var(--muted);">Währung</label>
+            <select class="filter"><option>EUR</option><option>USD</option><option>CHF</option></select>
+            <label style="font-size:13px;color:var(--muted);">Erinnerungsvorlauf</label>
+            <input class="search" type="number" value="14" />
+            <label style="font-size:13px;color:var(--muted);">Benachrichtigungszeit</label>
+            <input class="search" type="time" value="09:00" />
+            <div class="switch-row">
+              <span>Backup & Sync</span>
+              <input type="checkbox" checked />
+            </div>
+            <div style="margin-top:8px;"><button class="btn">Speichern</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="demo-bar" id="data-source-label">Klickbarer Prototyp — Mock-Daten</div>
+
+<script src="app.js"></script>
+</body>
+</html>
