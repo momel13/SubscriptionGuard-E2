@@ -5,13 +5,15 @@
 
 Dieses Dokument beschreibt das technische Design von SubscriptionGuard: Code-Organisation,
 Schichten, Komponenten, Datenmodell, zentrale Interaktionsfluesse, Designmuster und
-Konventionen. Es fuehrt die systemweite Sicht aus `design (1).adoc` mit der detaillierten
+Konventionen.
+Es fuehrt die systemweite Sicht aus `design (1).adoc` mit der detaillierten
 Frontend-Struktur aus der vorherigen `design.adoc` zusammen.
 
 == Systemuebersicht und Schichtenarchitektur
 
 SubscriptionGuard folgt einer 3-Schichten-Architektur plus externe Dienste. Dadurch bleiben
-Benutzeroberflaeche, Geschaeftslogik und Datenhaltung getrennt. Das Frontend kennt die
+Benutzeroberflaeche, Geschaeftslogik und Datenhaltung getrennt.
+Das Frontend kennt die
 Datenbank nicht direkt, sondern spricht mit der Logikschicht ueber REST.
 
 [plantuml,layer-diagram,svg]
@@ -47,7 +49,7 @@ Budgetstatus, Fristen-Job und Notification-Erzeugung.
 |Datenschicht, externe Dienste.
 
 |Datenschicht
-|Persistente Speicherung von Nutzern, Abos, Kategorien, Zahlungen, Budgets und Notifications;
+|Persistente Speicherung von Nutzern (inkl. Budget), Abos, Kategorien, Zahlungen und Notifications;
 Absicherung durch Constraints und Indizes.
 |Keine aeusseren Schichten.
 
@@ -216,7 +218,7 @@ berechnen.
 
 |`budget` Router
 |Express + SQL
-|Monatsbudget setzen und Status `NO_BUDGET`, `WITHIN_BUDGET`, `OVER_BUDGET` liefern.
+|Monatsbudget aus `users` lesen/setzen und Status `NO_BUDGET`, `WITHIN_BUDGET`, `OVER_BUDGET` liefern.
 
 |`import` Router
 |Express + multer + csv-parse
@@ -265,7 +267,7 @@ Nutzungsbewertung.
 |`budget`
 |F7 Monatsbudget, Fortschritt, Sparziel, UC5/PAP 5.
 |Budgetformular, Fortschrittsbalken, Warnung, Sparziel.
-|`/api/budget/status`, `/api/budget`, Tabelle `budgets`.
+|`/api/budget/status`, `/api/budget`, Attribut `monthly_budget` in `users`.
 
 |`notifications`
 |F4 Erinnerungen/Warnungen, UC2/PAP 2.
@@ -328,7 +330,8 @@ Nutzungsbewertung.
 
 == Datenmodell
 
-Die technische Persistenzstruktur spiegelt das fachliche Domaenenmodell wider. Die Datenbank
+Die technische Persistenzstruktur spiegelt das fachliche Domaenenmodell wider.
+Die Datenbank
 verwendet snake_case, die API und TypeScript verwenden camelCase.
 
 === Datenbankmodell
@@ -394,17 +397,8 @@ entity "notifications" as notif {
   * message : TEXT
 }
 
-entity "budgets" as budgets {
-  * id : SERIAL <<PK>>
-  --
-  * user_id : INT <<FK>>
-  * month : DATE
-  * target_amount : NUMERIC
-}
-
 users ||--o{ subs : besitzt
 categories ||--o{ subs : ordnet
-users ||--o{ budgets : definiert
 subs ||--o{ payments : erzeugt
 subs ||--o{ notif : loest_aus
 @enduml
@@ -419,12 +413,14 @@ subs ||--o{ notif : loest_aus
 .5+|`subscriptions`
 |`id`
 |Primaerschluessel.
+
 |`interval`
 |Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
 |`usage_rating`
 |Nutzungsbewertung: `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
 |`cancel_deadline`
-|Datum, bis zu dem gekuendigt werden muss; Grundlage fuer PAP 2.
+|Datum, bis zu dem gekuendigt werden muss;
+Grundlage fuer PAP 2.
 |`is_paused`
 |Pausierte Abos werden bei Kostenanalyse und Fristenpruefung ignoriert.
 
@@ -432,21 +428,17 @@ subs ||--o{ notif : loest_aus
 |`status`
 |Zahlungsstatus: `PENDING`, `PAID`, `FAILED`.
 |`subscription_id`
-|Fremdschluessel; bei Loeschung eines Abos werden Zahlungen kaskadierend geloescht.
+|Fremdschluessel;
+bei Loeschung eines Abos werden Zahlungen kaskadierend geloescht.
 
 .3+|`notifications`
 |`type`
 |Warnungsart, z.B. `CANCEL_DEADLINE_REMINDER`, `PAYMENT_REMINDER`, `BUDGET_WARNING`.
 |`trigger_date`
 |Datum, an dem die Erinnerung ausgeloest wird.
+
 |`is_sent`
 |Verhindert mehrfaches Senden derselben Erinnerung.
-
-.2+|`budgets`
-|`target_amount`
-|Monatliches Ausgabeziel; muss groesser 0 sein.
-|`user_id`, `month`
-|Eindeutige Kombination, damit pro Nutzer und Monat nur ein Budget existiert.
 |===
 
 === Shared TypeScript-Types
@@ -689,7 +681,7 @@ end
 
 User -> FE : Monatsbudget setzen
 FE -> BE : PUT /api/budget
-BE -> DB : UPSERT budget
+BE -> DB : UPDATE users SET monthly_budget
 BE --> FE : gespeichertes Budget
 FE -> BE : Status neu laden
 @enduml
@@ -800,7 +792,7 @@ berechnen.
 
 |F7 Budgetverwaltung
 |Monatsbudget, Fortschritt, Warnung, Sparziel.
-|`budget` Feature, Tabelle `budgets`, UC5.
+|`budget` Feature, Attribut `monthly_budget`, UC5.
 
 |F8 Einstellungen
 |Waehrung, Benachrichtigungszeiten, Datensicherung.
@@ -845,7 +837,7 @@ subscriptionguard/
         import-export/
         notifications/
         settings/
-        auth/
+      auth/
       shared/
         api/
         domain/
@@ -878,7 +870,7 @@ subscriptionguard/
 1. Monorepo mit `frontend`, `backend` und `shared` einrichten.
 2. Shared Types fuer `Subscription`, `Category`, `BudgetStatus`, `AnalysisResponse` anlegen.
 3. Datenbankmigrationen fuer `users`, `categories`, `subscriptions`, `payments`,
-   `notifications`, `budgets` erstellen.
+   `notifications` erstellen.
 4. Express-Grundgeruest mit Auth-Middleware, Error-Middleware und CORS konfigurieren.
 5. React App Shell, Routing und Hauptnavigation bauen.
 6. F1/F2: Abo-Verwaltung inklusive Formular, Liste, Kategorien, Fristenfelder.
