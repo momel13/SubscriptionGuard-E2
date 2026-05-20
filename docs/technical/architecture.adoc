@@ -17,9 +17,9 @@ Datenmodell, Interaktionsflüsse, sind im Designdokument (`design.adoc`) beschri
 
 ---
 
-== 1. Architektursichten
+== Architektursichten
 
-=== 1.1 Systemkontext
+=== Systemkontext
 
 [plantuml, "{diagramsdir}/system-context", svg]
 ----
@@ -30,7 +30,7 @@ LAYOUT_WITH_LEGEND()
 
 title Systemkontextdiagramm (Level 1) - SubscriptionGuard
 
-Person(user, "Nutzer:in", "Endanwender (z. B. Studierende), die ihre Abonnements verwalten und Fixkosten überwachen möchten.")
+Person(user, "Nutzer:in", "Endanwender (z. B. Studierende), die ihre Abonnements verwalten und Fixkosten überlagern möchten.")
 
 System(subscriptionGuard, "SubscriptionGuard", "Die zentrale Web-Anwendung zur Verwaltung von Abos, Kostenanalysen, CSV-Importen und Kündigungsfristen.")
 
@@ -76,7 +76,7 @@ NOTE: Das Kontextdiagramm zeigt ausschließlich externe Schnittstellen. Die inte
 | HTTPS / OS-spezifisch
 |===
 
-=== 1.2 Laufzeitumgebungen (Container Diagramm)
+=== Laufzeitumgebungen (Container Diagramm)
 
 [plantuml, "{diagramsdir}/container-diagram", svg]
 ....
@@ -113,10 +113,10 @@ Rel(push, user, "Zustellung auf Sperrbildschirm", "Native Push")
 @enduml
 ....
 
-=== 1.3 Verteilungsdiagramm (Deployment Diagramm)
+=== Verteilungsdiagramm (Deployment Diagramm)
 _Die physischen Knoten und das Deployment der Docker-Container / Cloud-Dienste sind im dedizierten `deployment.adoc` detailliert beschrieben._
 
-== 2. Technologie-Stack
+== Technologie-Stack
 
 === Übersicht
 
@@ -131,7 +131,7 @@ _Die physischen Knoten und das Deployment der Docker-Container / Cloud-Dienste s
 
 | UI-Komponenten
 | Mantine
-| Beschleunigt Formulare, Dialoge, Tabellen und Accessibility.
+| Beschhebenigt Formulare, Dialoge, Tabellen und Accessibility.
 | ADR-006
 
 | Diagramme
@@ -160,7 +160,7 @@ _Die physischen Knoten und das Deployment der Docker-Container / Cloud-Dienste s
 | ADR-005
 |===
 
-== 3. Architekturrelevante Anforderungen
+== Architekturrelevante Anforderungen
 
 IMPORTANT: Qualitätsziele und Einschränkungen werden hier *nicht* neu definiert — sie sind im `product_concept.adoc` als einziger Quelle festgelegt. Dieser Abschnitt zeigt ausschließlich die technischen Konsequenzen, die sich aus diesen Anforderungen ergeben.
 
@@ -189,7 +189,7 @@ IMPORTANT: Qualitätsziele und Einschränkungen werden hier *nicht* neu definier
 | ADR-008
 |===
 
-== 4. Architekturentscheidungen (ADRs)
+== Architekturentscheidungen (ADRs)
 
 === ADR-001: Gemeinsame Sprache mit TypeScript
 [cols="1,3"]
@@ -279,9 +279,9 @@ IMPORTANT: Qualitätsziele und Einschränkungen werden hier *nicht* neu definier
 | *Konsequenzen* | Das Datenschutzrisiko wird drastisch minimiert. Die reine Offline-Fähigkeit der App ist dadurch jedoch bewusst limitiert.
 |===
 
-== 5. Risiken & technische Schulden
+== Risiken & technische Schulden
 
-=== 5.1 Technische Risiken
+=== Technische Risiken
 
 [cols="2,1,1,3", options="header"]
 |===
@@ -312,7 +312,7 @@ IMPORTANT: Qualitätsziele und Einschränkungen werden hier *nicht* neu definier
 | Entwicklung lokal ausschließlich über die Supabase CLI (Docker PostgreSQL) statt lokaler SQLite-Mockups.
 |===
 
-=== 5.2 Technische Schulden
+=== Technische Schulden
 
 [cols="2,3,1", options="header"]
 |===
