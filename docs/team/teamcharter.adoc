@@ -24,7 +24,7 @@ SubscriptionGuard soll es ermöglichen Abonnements und laufenden Verträge einfa
 | Kevin
 
 | Entwickler:innen
-| Hiep, Joud, Fatemeh, Michele
+| Hiep, Joud, Fatemeh, Michele,Mohsen
 
 | Stakeholder (Hauptansprechpartner)
 | 
