@@ -1,24 +1,23 @@
-= Softwaredesign: {project-name}
-Vorname Nachname <email@domain.org>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
+= Softwaredesign: SubscriptionGuard
+Kevin Fiek <kevin.fiek@stud.htw-dresden.de>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
-// Platzhalter für weitere Dokumenten-Attribute
 :toc:
 :toclevels: 3
 :sectnums:
 
 Dieses Dokument beschreibt das technische Design von SubscriptionGuard: Code-Organisation,
-Schichten, Komponenten, Datenmodell, zentrale Interaktionsfluesse, Designmuster und
+Schichten, Komponenten, Datenmodell, zentrale Interaktionsflüsse, Designmuster und
 Konventionen.
-Es fuehrt die systemweite Sicht aus `design (1).adoc` mit der detaillierten
+Es führt die systemweite Sicht aus `design (1).adoc` mit der detaillierten
 Frontend-Struktur aus der vorherigen `design.adoc` zusammen.
 
-== Systemuebersicht und Schichtenarchitektur
+== Systemübersicht und Schichtenarchitektur
 
 SubscriptionGuard folgt einer 3-Schichten-Architektur plus externe Dienste. Dadurch bleiben
-Benutzeroberflaeche, Geschaeftslogik und Datenhaltung getrennt.
+Benutzeroberfläche, Geschäftslogik und Datenhaltung getrennt.
 Das Frontend kennt die
-Datenbank nicht direkt, sondern spricht mit der Logikschicht ueber REST.
+Datenbank nicht direkt, sondern spricht mit der Logikschicht über REST.
 
 [plantuml,layer-diagram,svg]
 ----
@@ -26,43 +25,43 @@ Datenbank nicht direkt, sondern spricht mit der Logikschicht ueber REST.
 top to bottom direction
 skinparam componentStyle rectangle
 
-rectangle "Praesentationsschicht\nReact, TypeScript, Mantine, Chart.js" as Presentation
+rectangle "Präsentationsschicht\nReact, TypeScript, Mantine, Chart.js" as Presentation
 rectangle "Logikschicht\nNode.js, Express, TypeScript, node-cron" as Logic
-rectangle "Datenschicht\nPostgreSQL/Supabase, SQLite Dev" as Data
+rectangle "Datenschicht\nPostgreSQL (Cloud Prod & Docker Dev)" as Data
 rectangle "Externe Dienste\nSupabase Auth, FCM/APNS/Web Push" as External
 
 Presentation --> Logic : REST / JSON / FormData
 Presentation --> External : Auth-Session, Browser-Push-Berechtigung
 Logic --> Data : SQL / Prepared Statements
-Logic --> External : Auth pruefen, Push senden
+Logic --> External : Auth prüfen, Push senden
 @enduml
 ----
 
 [cols="1,3,3",options="header"]
 |===
-|Schicht |Verantwortung |Darf abhaengen von
+|Schicht |Verantwortung |Darf abhängen von
 
-|Praesentationsschicht
+|Präsentationsschicht
 |UI rendern, Eingaben erfassen, lokales State-Management, Diagramme zeichnen, Upload/Download
 starten, API-Calls absetzen und Notifications anzeigen.
 |Logikschicht, Auth-/Browser-Dienste.
 
 |Logikschicht
-|Routing, Auth-Pruefung, serverseitige Validierung, Aggregation, CSV-Parsing,
+|Routing, Auth-Prüfung, serverseitige Validierung, Aggregation, CSV-Parsing,
 Budgetstatus, Fristen-Job und Notification-Erzeugung.
 |Datenschicht, externe Dienste.
 
 |Datenschicht
 |Persistente Speicherung von Nutzern (inkl. Budget), Abos, Kategorien, Zahlungen und Notifications;
-Absicherung durch Constraints und Indizes.
-|Keine aeusseren Schichten.
+Absicherung durch Constraints und Indizes im einheitlichen PostgreSQL-Dialekt.
+|Keine äußeren Schichten.
 
 |Externe Dienste
 |Standardisierte Dienste wie Authentifizierung und Push-Zustellung.
 |Je nach Dienst.
 |===
 
-== Komponentenuebersicht
+== Komponentenübersicht
 
 === Systemweite Komponenten
 
@@ -95,8 +94,7 @@ package "Backend\nExpress + TypeScript" {
   [Push Service Adapter] as PushAdapter
 }
 
-database "PostgreSQL / Supabase" as Db
-database "SQLite Dev" as Sqlite
+database "PostgreSQL / Supabase\n(Cloud Prod & Docker Dev)" as Db
 cloud "Supabase Auth" as Auth
 cloud "FCM / APNS / Web Push" as Push
 
@@ -131,7 +129,6 @@ NotificationApi --> Db
 DeadlineJob --> Db
 DeadlineJob --> PushAdapter
 PushAdapter --> Push
-SubApi ..> Sqlite : Dev-Modus
 @enduml
 ----
 
@@ -208,12 +205,12 @@ package "settings (F8)" {
 
 |`subscriptions` Router
 |Express + TypeScript
-|Abo anlegen, listen, bearbeiten, loeschen, pausieren/fortsetzen. Validiert Eingaben und
+|Abo anlegen, listen, bearbeiten, löschen, pausieren/fortsetzen. Validiert Eingaben und
 erzeugt Erinnerungen bei Fristen.
 
 |`categories` Router
 |Express + TypeScript
-|Kategorien fuer Abo-Formulare und Auswertungen bereitstellen.
+|Kategorien für Abo-Formulare und Auswertungen bereitstellen.
 
 |`analysis` Router
 |Express + SQL
@@ -226,24 +223,24 @@ berechnen.
 
 |`import` Router
 |Express + multer + csv-parse
-|CSV-Dateien entgegennehmen, wiederkehrende Zahlungen erkennen und bestaetigte Kandidaten als
+|CSV-Dateien entgegennehmen, wiederkehrende Zahlungen erkennen und bestätigte Kandidaten als
 Abos anlegen.
 
 |`notifications` Router
 |Express + SQL
-|Erinnerungen und Warnungen fuer das Frontend bereitstellen.
+|Erinnerungen und Warnungen für das Frontend bereitstellen.
 
 |Deadline Job
 |node-cron
-|Taeglich faellige Kuendigungsfristen pruefen, Notifications erstellen und Push ausloesen.
+|Täglich fällige Kündigungsfristen prüfen, Notifications erstellen und Push auslösen.
 
 |Push Service Adapter
 |FCM / APNS / Web Push
 |Provider-spezifische Push-Zustellung kapseln.
 
 |DB-Zugriff
-|pg-Treiber / Supabase Client / SQLite Dev
-|Prepared Statements, Connection Handling und Mapping von snake_case zu camelCase.
+|pg-Treiber / Supabase Client
+|Prepared Statements, Connection Handling und Mapping von snake_case zu camelCase im einheitlichen PostgreSQL-Dialekt.
 |===
 
 == Feature-Verantwortlichkeiten
@@ -254,18 +251,18 @@ Abos anlegen.
 
 |`subscriptions`
 |F1 Abo-Verwaltung, F2 Vertragsdaten, Teile von F5, UC1/PAP 1.
-|Liste, Detail, Formular, Kategorieauswahl, Fristen-/Vertragsfelder, Pause, Loeschen,
+|Liste, Detail, Formular, Kategorieauswahl, Fristen-/Vertragsfelder, Pause, Löschen,
 Nutzungsbewertung.
 |`/api/subscriptions`, `/api/categories`, Tabellen `subscriptions`, `categories`.
 
 |`analysis`
-|F3 Kostenuebersicht, F5 Optimierung, UC3/PAP 3.
+|F3 Kostenübersicht, F5 Optimierung, UC3/PAP 3.
 |Kosten-Kacheln, Kategoriechart, Verlauf, Prognose, Empfehlungen.
-|`/api/analysis`, SQL-Aggregation ueber `subscriptions` und `categories`.
+|`/api/analysis`, SQL-Aggregation über `subscriptions` und `categories`.
 
 |`import-export`
 |F6 CSV-Import, automatische Erkennung, PDF/CSV-Export, UC4/PAP 4.
-|Upload, Kandidatenliste, Bestaetigen/Verwerfen, Zusammenfassung, Export-Menue.
+|Upload, Kandidatenliste, Bestätigen/Verwerfen, Zusammenfassung, Export-Menü.
 |`/api/import/csv`, `/api/import/commit`, Export-Endpunkte.
 
 |`budget`
@@ -279,13 +276,13 @@ Nutzungsbewertung.
 |`/api/notifications`, Tabelle `notifications`, Push Adapter, Deadline Job.
 
 |`settings`
-|F8 Waehrung, Benachrichtigungszeiten, Datensicherung.
-|Waehrungsauswahl, Reminder-Zeiten/Vorlauftage, Backup-/Sync-Panel.
+|F8 Währung, Benachrichtigungszeiten, Datensicherung.
+|Währungsauswahl, Reminder-Zeiten/Vorlauftage, Backup-/Sync-Panel.
 |Nutzerprofil in `users`, Auth-Kontext, optional Backup-/Export-Endpunkte.
 
 |`auth`
-|Login, Session und geschuetzte Bereiche.
-|Login, Logout, Session-Gate, geschuetzte Routen.
+|Login, Session und geschützte Bereiche.
+|Login, Logout, Session-Gate, geschützte Routen.
 |Supabase Auth oder Backend-Auth-Middleware.
 |===
 
@@ -297,7 +294,7 @@ Nutzungsbewertung.
 
 |`/`
 |`DashboardPage`
-|Kostenueberblick, Budgetstatus, naechste Fristen und wichtigste Empfehlungen.
+|Kostenüberblick, Budgetstatus, nächste Fristen und wichtigste Empfehlungen.
 
 |`/subscriptions`
 |`SubscriptionsPage`
@@ -329,12 +326,12 @@ Nutzungsbewertung.
 
 |`/settings`
 |`SettingsPage`
-|F8: Waehrung, Benachrichtigungszeiten, Backup/Sync.
+|F8: Währung, Benachrichtigungszeiten, Backup/Sync.
 |===
 
 == Datenmodell
 
-Die technische Persistenzstruktur spiegelt das fachliche Domaenenmodell wider.
+Die technische Persistenzstruktur spiegelt das fachliche Domänenmodell wider.
 Die Datenbank
 verwendet snake_case, die API und TypeScript verwenden camelCase.
 
@@ -404,7 +401,7 @@ entity "notifications" as notif {
 users ||--o{ subs : besitzt
 categories ||--o{ subs : ordnet
 subs ||--o{ payments : erzeugt
-subs ||--o{ notif : loest_aus
+subs ||--o{ notif : löst_aus
 @enduml
 ----
 
@@ -416,30 +413,30 @@ subs ||--o{ notif : loest_aus
 
 .5+|`subscriptions`
 |`id`
-|Primaerschluessel.
+|Primärschlüssel.
 
 |`interval`
 |Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
 |`usage_rating`
 |Nutzungsbewertung: `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
 |`cancel_deadline`
-|Datum, bis zu dem gekuendigt werden muss;
-Grundlage fuer PAP 2.
+|Datum, bis zu dem gekündigt werden muss;
+Grundlage für PAP 2.
 |`is_paused`
-|Pausierte Abos werden bei Kostenanalyse und Fristenpruefung ignoriert.
+|Pausierte Abos werden bei Kostenanalyse und Fristenprüfung ignoriert.
 
 .2+|`payments`
 |`status`
 |Zahlungsstatus: `PENDING`, `PAID`, `FAILED`.
 |`subscription_id`
-|Fremdschluessel;
-bei Loeschung eines Abos werden Zahlungen kaskadierend geloescht.
+|Fremdschlüssel;
+bei Löschung eines Abos werden Zahlungen kaskadierend gelöscht.
 
 .3+|`notifications`
 |`type`
 |Warnungsart, z.B. `CANCEL_DEADLINE_REMINDER`, `PAYMENT_REMINDER`, `BUDGET_WARNING`.
 |`trigger_date`
-|Datum, an dem die Erinnerung ausgeloest wird.
+|Datum, an dem die Erinnerung ausgelöst wird.
 
 |`is_sent`
 |Verhindert mehrfaches Senden derselben Erinnerung.
@@ -506,20 +503,20 @@ export interface AnalysisResponse {
 |Ressourcenorientiert im Plural: `/api/subscriptions`, `/api/categories`, `/api/notifications`.
 
 |HTTP-Methoden
-|`GET` fuer Listen/Analyse/Status, `POST` fuer Anlegen und Import, `PATCH` fuer Bearbeiten,
-`DELETE` fuer Loeschen, `PUT` fuer vollstaendiges Setzen wie Budget.
+|`GET` für Listen/Analyse/Status, `POST` für Anlegen und Import, `PATCH` für Bearbeiten,
+`DELETE` für Löschen, `PUT` für vollständiges Setzen wie Budget.
 
 |Payloads
-|JSON fuer Standardfaelle, `FormData` fuer CSV-Upload.
+|JSON für Standardfälle, `FormData` für CSV-Upload.
 
 |Namenskonvention
 |API-Responses verwenden camelCase. Mapping von SQL snake_case passiert im Backend.
 
 |Fehlerformat
-|Validierungsfehler werden strukturiert zurueckgegeben, z.B. `{ errors: string[] }`.
+|Validierungsfehler werden strukturiert zurückgegeben, z.B. `{ errors: string[] }`.
 
 |SQL-Sicherheit
-|Alle SQL-Variablen werden ueber Prepared Statements gebunden.
+|Alle SQL-Variablen werden über Prepared Statements gebunden.
 |===
 
 [cols="1,1,2,3",options="header"]
@@ -529,18 +526,18 @@ export interface AnalysisResponse {
 |POST |`/api/subscriptions` |UC1 / PAP 1 |Abo anlegen.
 |GET |`/api/subscriptions` |F1 |Alle Abos auflisten.
 |PATCH |`/api/subscriptions/:id` |F1 |Abo bearbeiten.
-|DELETE |`/api/subscriptions/:id` |F1 |Abo loeschen.
+|DELETE |`/api/subscriptions/:id` |F1 |Abo löschen.
 |POST |`/api/subscriptions/:id/pause` |F1 |Abo pausieren oder fortsetzen.
 |GET |`/api/categories` |F1 |Kategorien laden.
 |GET |`/api/analysis` |UC3 / PAP 3 |Kostenanalyse und Empfehlungen.
-|POST |`/api/import/csv` |UC4 / PAP 4 |CSV hochladen und Vorschlaege erhalten.
-|POST |`/api/import/commit` |UC4 / PAP 4 |Vorschlaege bestaetigen und Abos anlegen.
+|POST |`/api/import/csv` |UC4 / PAP 4 |CSV hochladen und Vorschläge erhalten.
+|POST |`/api/import/commit` |UC4 / PAP 4 |Vorschläge bestätigen und Abos anlegen.
 |GET |`/api/budget/status` |UC5 / PAP 5 |Budgetstatus laden.
 |PUT |`/api/budget` |UC5 / PAP 5 |Monatsbudget setzen.
 |GET |`/api/notifications` |F4 / UC2 |Erinnerungen abrufen.
 |===
 
-== Wichtige Interaktionsfluesse
+== Wichtige Interaktionsflüsse
 
 === UC1/PAP 1: Abo anlegen
 
@@ -552,8 +549,8 @@ participant "Frontend\nSubscriptionForm" as FE
 participant "Backend\nSubscriptions Router" as BE
 database "Datenbank" as DB
 
-User -> FE : Formular ausfuellen und absenden
-FE -> FE : Client-Plausibilitaet pruefen
+User -> FE : Formular ausfüllen und absenden
+FE -> FE : Client-Plausibilität prüfen
 FE -> BE : POST /api/subscriptions
 BE -> BE : Serverseitige Validierung
 alt Validierung fehlgeschlagen
@@ -562,7 +559,7 @@ alt Validierung fehlgeschlagen
 else Validierung erfolgreich
   BE -> DB : INSERT INTO subscriptions
   DB --> BE : savedSubscription
-  opt Kuendigungsfrist vorhanden
+  opt Kündigungsfrist vorhanden
     BE -> DB : INSERT INTO notifications
   end
   BE --> FE : 201 Subscription
@@ -572,7 +569,7 @@ end
 @enduml
 ----
 
-=== UC2/PAP 2: Taegliche Fristenpruefung
+=== UC2/PAP 2: Tägliche Fristenprüfung
 
 [plantuml,sequence-deadline-check,svg]
 ----
@@ -583,10 +580,10 @@ participant "Push Adapter" as Push
 participant "Backend\nNotifications Router" as BE
 participant "Frontend\nNotification Center" as FE
 
-Cron -> Cron : Taeglicher Timer
-Cron -> DB : SELECT faellige Abos
-DB --> Cron : Liste faelliger Abos
-loop fuer jedes Abo
+Cron -> Cron : Täglicher Timer
+Cron -> DB : SELECT fällige Abos
+DB --> Cron : Liste fälliger Abos
+loop für jedes Abo
   Cron -> DB : INSERT INTO notifications
   Cron -> Push : sendPush(userId, message)
   Push --> Cron : OK
@@ -610,11 +607,11 @@ participant "Frontend\nAnalysisDashboard" as FE
 participant "Backend\nAnalysis Router" as BE
 database "Datenbank" as DB
 
-User -> FE : Analyse oeffnen
+User -> FE : Analyse öffnen
 FE -> BE : GET /api/analysis
 BE -> DB : Kosten normalisieren und nach Kategorien gruppieren
 DB --> BE : aggregierte Kosten
-BE -> DB : niedrige Nutzung / Duplikate pruefen
+BE -> DB : niedrige Nutzung / Duplikate prüfen
 DB --> BE : Empfehlungen-Daten
 BE --> FE : AnalysisResponse
 FE -> FE : Diagramme und Empfehlungen rendern
@@ -632,21 +629,21 @@ participant "Frontend\nCsvImportWizard" as FE
 participant "Backend\nImport Router" as BE
 database "Datenbank" as DB
 
-User -> FE : CSV-Datei auswaehlen
-FE -> FE : Dateityp/Groesse oberflaechlich pruefen
+User -> FE : CSV-Datei auswählen
+FE -> FE : Dateityp/Größe oberflächlich prüfen
 FE -> BE : POST /api/import/csv (FormData)
 BE -> BE : Datei parsen
-BE -> BE : Zahlungen nach Empfaenger gruppieren
+BE -> BE : Zahlungen nach Empfänger gruppieren
 BE -> BE : wiederkehrende Muster erkennen
 alt Datei unlesbar
   BE --> FE : 400 Fehler
   FE --> User : Fehlermeldung anzeigen
 else Kandidaten gefunden
   BE --> FE : candidates[]
-  FE --> User : Vorschlaege anzeigen
-  User -> FE : Kandidaten bestaetigen/verwerfen
+  FE --> User : Vorschläge anzeigen
+  User -> FE : Kandidaten bestätigen/verwerfen
   FE -> BE : POST /api/import/commit
-  BE -> DB : INSERT bestaetigte Abos
+  BE -> DB : INSERT bestätigte Abos
   BE --> FE : Zusammenfassung
   FE --> User : Import-Zusammenfassung
 else keine Kandidaten
@@ -656,7 +653,7 @@ end
 @enduml
 ----
 
-=== UC5/PAP 5: Budget setzen und ueberwachen
+=== UC5/PAP 5: Budget setzen und überwachen
 
 [plantuml,sequence-budget,svg]
 ----
@@ -666,7 +663,7 @@ participant "Frontend\nBudgetPage" as FE
 participant "Backend\nBudget Router" as BE
 database "Datenbank" as DB
 
-User -> FE : Budget oeffnen
+User -> FE : Budget öffnen
 FE -> BE : GET /api/budget/status
 BE -> DB : Budget laden
 alt Kein Budget
@@ -679,7 +676,7 @@ else Budget vorhanden
     FE --> User : roter Fortschritt + Warnung
   else innerhalb Budget
     BE --> FE : WITHIN_BUDGET
-    FE --> User : gruener Fortschritt + Restbetrag
+    FE --> User : grüner Fortschritt + Restbetrag
   end
 end
 
@@ -695,16 +692,16 @@ FE -> BE : Status neu laden
 
 [cols="1,2,3",options="header"]
 |===
-|Muster |Wo eingesetzt |Begruendung
+|Muster |Wo eingesetzt |Begründung
 
 |Shared TypeScript-Types
 |`/shared/types.ts`
-|Frontend und Backend teilen Interface-Definitionen. Aenderungen am Datenmodell werden beim
+|Frontend und Backend teilen Interface-Definitionen. Änderungen am Datenmodell werden beim
 Build sichtbar.
 
 |Feature-orientierte Frontend-Module
 |`frontend/src/features/*`
-|Fachliche Bereiche wie Abos, Analyse, Budget und Import bleiben zusammenhaengend wartbar.
+|Fachliche Bereiche wie Abos, Analyse, Budget und Import bleiben zusammenhängend wartbar.
 
 |API Client Facade
 |`frontend/src/shared/api/*`
@@ -716,13 +713,13 @@ konsistent.
 |Kosten werden per SQL `SUM` und `CASE` normalisiert, statt alle Rohdaten im Frontend zu
 berechnen.
 
-|Backend fuer Import-Erkennung
+|Backend für Import-Erkennung
 |`POST /api/import/csv`
-|CSV-Mustererkennung kann rechenintensiv sein und laeuft stabiler im Backend.
+|CSV-Mustererkennung kann rechenintensiv sein und läuft stabiler im Backend.
 
 |Scheduler
 |`deadlineCheck`
-|PAP 2 laeuft ohne Nutzerinteraktion taeglich automatisch.
+|PAP 2 läuft ohne Nutzerinteraktion täglich automatisch.
 
 |Adapter
 |Push Service, Auth, DB-Zugriff
@@ -730,10 +727,10 @@ berechnen.
 
 |Discriminated Union
 |`BudgetStatus`
-|Das Frontend muss alle Budgetzustaende explizit behandeln.
+|Das Frontend muss alle Budgetzustände explizit behandeln.
 |===
 
-== UI-Zustaende
+== UI-Zustände
 
 [cols="1,3,3",options="header"]
 |===
@@ -745,11 +742,11 @@ berechnen.
 
 |Empty
 |Keine Abos, keine Analyse, keine Import-Kandidaten oder kein Budget.
-|Kurzer Empty State mit passender Primaeraktion.
+|Kurzer Empty State mit passender Primäraktion.
 
 |Validation Error
 |Client- oder Backend-Validierung meldet Probleme.
-|Fehler nahe am Feld; globale Fehlermeldung nur fuer formularweite Probleme.
+|Fehler nahe am Feld; globale Fehlermeldung nur für formularweite Probleme.
 
 |Permission Required
 |Browser Notifications sind noch nicht erlaubt.
@@ -761,7 +758,7 @@ berechnen.
 
 |Over Budget
 |Budgetstatus ist `OVER_BUDGET`.
-|Roter Fortschrittsbalken, konkreter Betrag der Ueberschreitung.
+|Roter Fortschrittsbalken, konkreter Betrag der Überschreitung.
 |===
 
 == Traceability-Matrix
@@ -775,10 +772,10 @@ berechnen.
 |`subscriptions` Feature, `/api/subscriptions`, UC1.
 
 |F2 Fristen- und Vertragsmanagement
-|Kuendigungsfrist, Vertragsende, Auto-Renewal, Deadline Job.
+|Kündigungsfrist, Vertragsende, Auto-Renewal, Deadline Job.
 |`ContractFields`, `subscriptions.cancel_deadline`, PAP 2.
 
-|F3 Kostenuebersicht und Statistiken
+|F3 Kostenübersicht und Statistiken
 |Kennzahlen, Kategoriechart, Verlauf, Prognose.
 |`analysis` Feature, `/api/analysis`, UC3.
 
@@ -791,7 +788,7 @@ berechnen.
 |`usage_rating`, Analyse-Engine, `RecommendationList`.
 
 |F6 Import und Export
-|CSV-Upload, Kandidatenpruefung, Export-Menue.
+|CSV-Upload, Kandidatenprüfung, Export-Menü.
 |`import-export` Feature, `/api/import/*`, UC4.
 
 |F7 Budgetverwaltung
@@ -799,7 +796,7 @@ berechnen.
 |`budget` Feature, Attribut `monthly_budget`, UC5.
 
 |F8 Einstellungen
-|Waehrung, Benachrichtigungszeiten, Datensicherung.
+|Währung, Benachrichtigungszeiten, Datensicherung.
 |`settings` Feature, `users.currency`, `notification_lead_days`.
 
 |PAP 1
@@ -807,7 +804,7 @@ berechnen.
 |Sequenzdiagramm UC1.
 
 |PAP 2
-|Taeglicher Fristenjob und Push.
+|Täglicher Fristenjob und Push.
 |Sequenzdiagramm UC2.
 
 |PAP 3
@@ -815,7 +812,7 @@ berechnen.
 |Sequenzdiagramm UC3.
 
 |PAP 4
-|CSV-Import und Kandidatenbestaetigung.
+|CSV-Import und Kandidatenbestätigung.
 |Sequenzdiagramm UC4.
 
 |PAP 5
@@ -872,16 +869,16 @@ subscriptionguard/
 == Umsetzungsreihenfolge
 
 1. Monorepo mit `frontend`, `backend` und `shared` einrichten.
-2. Shared Types fuer `Subscription`, `Category`, `BudgetStatus`, `AnalysisResponse` anlegen.
-3. Datenbankmigrationen fuer `users`, `categories`, `subscriptions`, `payments`,
+2. Shared Types für `Subscription`, `Category`, `BudgetStatus`, `AnalysisResponse` anlegen.
+3. Datenbankmigrationen für `users`, `categories`, `subscriptions`, `payments`,
    `notifications` erstellen.
-4. Express-Grundgeruest mit Auth-Middleware, Error-Middleware und CORS konfigurieren.
+4. Express-Grundgerüst mit Auth-Middleware, Error-Middleware und CORS konfigurieren.
 5. React App Shell, Routing und Hauptnavigation bauen.
 6. F1/F2: Abo-Verwaltung inklusive Formular, Liste, Kategorien, Fristenfelder.
 7. F7: Budgetstatus und Budgetformular.
 8. F3/F5: Analyse-Dashboard mit Chart.js und Empfehlungen.
-9. F6: CSV-Import-Wizard und spaeter Export.
+9. F6: CSV-Import-Wizard und später Export.
 10. F4: Deadline Job, Notifications API, Notification Center und optional Browser Push.
-11. F8: Settings fuer Waehrung, Reminder-Vorlauftage und Backup/Sync.
-12. Tests fuer Domaenenfunktionen, API-Fehler, Budgetstatus, Import-Erkennung und zentrale
-    Komponenten ergaenzen.
+11. F8: Settings für Währung, Reminder-Vorlauftage und Backup/Sync.
+12. Tests für Domänenfunktionen, API-Fehler, Budgetstatus, Import-Erkennung und zentrale
+    Komponenten ergänzen.
