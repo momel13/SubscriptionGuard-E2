@@ -1,4 +1,4 @@
-= Lokale Startanleitung (Deployment): {project-name}
+= Lokale Startanleitung (Deployment): {SubscriptionGuard-E2}
 Fatemeh <fatemeh.pakcheshm2@stud.htw-dresden.de>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]

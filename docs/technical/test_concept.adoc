@@ -1,5 +1,5 @@
-= Testkonzept: {project-name}
-Vorname Nachname <email@domain.org>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
+= Testkonzept: {SubscriptionGuard-E2}
+Joud Khatib <joud.khatib2@stud.htw-dresden.de>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
 // Platzhalter für weitere Dokumenten-Attribute
@@ -15,9 +15,13 @@ und wie Tests in den Entwicklungsprozess integriert sind._
 _Beschreibe in wenigen Sätzen den grundsätzlichen Ansatz zur Qualitätssicherung im Projekt.
 Warum wurden diese Testarten gewählt? Welchen Stellenwert hat Testing im Team?_
 
-[Hier die übergeordnete Teststrategie beschreiben, z. B.:
-„Wir setzen auf eine Teststrategie mit einem starken Fokus auf Unit-Tests,
-ergänzt durch Integrationstests für kritische Schnittstellen und manuelle Tests für die wichtigsten Nutzerinteraktionen."]
+Für den Walking Skeleton liegt unser Fokus vor allem darauf, zu prüfen, ob die einzelnen Teile unserer Architektur überhaupt
+korrekt zusammenarbeiten. Dabei soll getestet werden, ob das React-Frontend Requests an das Node/Express-Backend senden kann
+und ob das Backend anschließend erfolgreich Daten aus der Supabase-PostgreSQL-Datenbank abruft.
+
+Es geht noch nicht um die vollständige Umsetzung aller Features oder komplexe Geschäftslogik. Stattdessen
+steht der technische Durchstich der Datenpipeline im Vordergrund. Konkret wird überprüft, ob Daten korrekt vom Frontend über
+das Backend zur Datenbank und wieder zurück übertragen und anschließend im UI angezeigt werden können.
 
 == Testarten
 
@@ -30,22 +34,22 @@ Unit-Tests prüfen einzelne Klassen oder Funktionen isoliert voneinander.
 | Aspekt | Beschreibung
 
 | Ziel
-| Sicherstellung der korrekten Funktionsweise einzelner Komponenten in Isolation
+| Überprüfung einzelner Hilfsfunktionen und Daten-Mapping-Funktionen in Isolation
 
 | Umfang
-| Alle Service- und Domänenklassen; Fokus auf Geschäftslogik
+| Mapping von snake_case zu camelCase sowie einfache Backend-Hilfsfunktionen
 
 | Werkzeug
-| [z. B. JUnit 5, Pytest, Jest]
+| Vitest / Jest
 
 | Mocking (Faken / Simulieren)
-| [z. B. Mockito, unittest.mock — externe Abhängigkeiten werden gemockt]
+| Supabase-Responses können für isolierte Tests gemockt werden
 
 | Abdeckungsziel
-| [z. B. mind. 80 % Zeilenabdeckung auf der Service-Schicht]
+| Kein fester Zielwert im Walking Skeleton; Fokus liegt auf Integrationsfähigkeit
 
 | Ausführung
-| Lokal bei jedem Build; automatisch in der CI-Pipeline bei jedem Push
+| Lokal während der Entwicklung
 |===
 
 === Integrationstests
@@ -57,19 +61,19 @@ Integrationstests prüfen das Zusammenspiel mehrerer Komponenten, z. B. Service 
 | Aspekt | Beschreibung
 
 | Ziel
-| Sicherstellung der korrekten Kommunikation zwischen Komponenten und mit externen Systemen
+| Sicherstellung der fehlerfreien Kommunikation zwischen Frontend, Backend und Supabase-Daten
 
 | Umfang
-| [z. B. REST-Endpunkte, Datenbankzugriffe, externe API-Aufrufe]
+| GET /api/dashboard, Datenbankzugriff, Daten-Mapping, API-Responses
 
 | Werkzeug
-| [z. B. Spring Boot Test, Testcontainers, Supertest]
+| Express, fetch API, Browser DevTools, Postman
 
 | Testdaten
-| [z. B. dedizierte Testdatenbank, In-Memory-Datenbank, Fixtures]
+| Seed-Daten in der Supabase-Cloud-Datenbank
 
 | Ausführung
-| Automatisch in der CI-Pipeline; nicht zwingend bei jedem lokalen Build
+| Manuell während der Entwicklung und vor jedem Meilenstein-Review
 |===
 
 === Optional: End-to-End-Tests (E2E)
@@ -83,16 +87,16 @@ E2E-Tests simulieren echte Nutzerinteraktionen durch die gesamte Anwendung.
 | Aspekt | Beschreibung
 
 | Ziel
-| Sicherstellung der wichtigsten Interaktionen aus Endnutzerperspektive
+| Überprüfung des vollständigen technischen Durchstichs aus Nutzersicht
 
 | Umfang
-| [z. B. Login, Kernfunktion A, Kernfunktion B — nur kritische Pfade]
+| Dashboard laden und Daten aus der Datenbank im UI anzeigen
 
 | Werkzeug
-| [z. B. Cypress, Playwright, Selenium]
+| Manuelle Browser-Tests (Playwright/Cypress optional später)
 
 | Ausführung
-| [z. B. manuell vor jedem Release; oder automatisch auf Staging-Umgebung]
+| Manuell im Browser
 |===
 
 === Manuelle Tests
@@ -104,16 +108,19 @@ Hier werden alle Tests aufgeführt, die nicht automatisiert werden können.
 | Aspekt | Beschreibung
 
 | Ziel
-| Überprüfung von Usability, visueller Korrektheit und explorativem Testen
+| Überprüfung der technischen Integration sowie der sichtbaren UI-Funktionalität
 
 | Umfang
-| [z. B. UI-Design, Responsivität, neue Features vor dem Sprint Review]
+| Dashboard-Aufruf, API-Kommunikation, Fehleranzeige
 
 | Vorgehen
-| [z. B. Exploratives Testen durch Teammitglied, das das Feature nicht implementiert hat]
+| Frontend wird lokal gestartet und sendet Requests an das lokale Express-Backend.
+Das Backend ruft reale Seed-Daten aus Supabase ab.
+Die Antworten werden im Browser und in den DevTools überprüft.
+
 
 | Dokumentation
-| [z. B. Testergebnisse als Kommentar in GitIssue]
+| Testergebnisse werden als Kommentar oder Anhang im GitHub-Issue dokumentiert
 |===
 
 == Nicht getestet
