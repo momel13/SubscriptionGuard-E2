@@ -1,59 +1,55 @@
-= Softwaredesign: SubscriptionGuard
-Kevin Fiek <kevin.fiek@stud.htw-dresden.de>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
+= Softwaredesign: {project-name}
+Kevin Fiek <kevin.fiek@stud.htw-dresden.de>; HuyHiep Nguyen <huyhiep.nguyen@stud.htw-dresden.de>; Vorname3 Nachname3 <email3@domain.org>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
 :toc:
 :toclevels: 3
 :sectnums:
 
-Dieses Dokument beschreibt das technische Design von SubscriptionGuard: Code-Organisation,
-Schichten, Komponenten, Datenmodell, zentrale Interaktionsflüsse, Designmuster und
-Konventionen.
-Es führt die systemweite Sicht aus `design (1).adoc` mit der detaillierten
-Frontend-Struktur aus der vorherigen `design.adoc` zusammen.
+== Systemübersicht & Schichtenarchitektur
 
-== Systemübersicht und Schichtenarchitektur
+_Dieser Abschnitt beschreibt, in welche Schichten oder Bereiche das System aufgeteilt ist und welche Verantwortung jede Schicht trägt. Eine klare Schichtentrennung verhindert, dass Geschäftslogik, Datenzugriff und Präsentation unkontrolliert vermischt werden._
 
-SubscriptionGuard folgt einer 3-Schichten-Architektur plus externe Dienste. Dadurch bleiben
-Benutzeroberfläche, Geschäftslogik und Datenhaltung getrennt.
-Das Frontend kennt die
-Datenbank nicht direkt, sondern spricht mit der Logikschicht über REST.
+SubscriptionGuard folgt einer 3-Schichten-Architektur plus externe Dienste. Dadurch bleiben Benutzeroberfläche, Geschäftslogik und Datenhaltung getrennt. Das Frontend kennt die Datenbank nicht direkt, sondern spricht mit der Logikschicht über REST.
+
+=== Schichtendiagramm
 
 [plantuml,layer-diagram,svg]
-----
+....
 @startuml
 top to bottom direction
 skinparam componentStyle rectangle
+skinparam monochrome true
+skinparam defaultFontSize 13
 
 rectangle "Präsentationsschicht\nReact, TypeScript, Mantine, Chart.js" as Presentation
 rectangle "Logikschicht\nNode.js, Express, TypeScript, node-cron" as Logic
 rectangle "Datenschicht\nPostgreSQL (Cloud Prod & Docker Dev)" as Data
 rectangle "Externe Dienste\nSupabase Auth, FCM/APNS/Web Push" as External
 
-Presentation --> Logic : REST / JSON / FormData
-Presentation --> External : Auth-Session, Browser-Push-Berechtigung
-Logic --> Data : SQL / Prepared Statements
-Logic --> External : Auth prüfen, Push senden
+Presentation -down-> Logic : REST / JSON / FormData
+Presentation -down-> External : Auth-Session, Browser-Push-Berechtigung
+Logic -down-> Data : SQL / Prepared Statements
+Logic -right-> External : Auth prüfen, Push senden
 @enduml
-----
+....
+
+=== Beschreibung der Schichten
 
 [cols="1,3,3",options="header"]
 |===
 |Schicht |Verantwortung |Darf abhängen von
 
 |Präsentationsschicht
-|UI rendern, Eingaben erfassen, lokales State-Management, Diagramme zeichnen, Upload/Download
-starten, API-Calls absetzen und Notifications anzeigen.
+|UI rendern, Eingaben erfassen, lokales State-Management, Diagramme zeichnen, Upload/Download starten, API-Calls absetzen und Notifications anzeigen.
 |Logikschicht, Auth-/Browser-Dienste.
 
 |Logikschicht
-|Routing, Auth-Prüfung, serverseitige Validierung, Aggregation, CSV-Parsing,
-Budgetstatus, Fristen-Job und Notification-Erzeugung.
+|Routing, Auth-Prüfung, serverseitige Validierung, Aggregation, CSV-Parsing, Budgetstatus, Fristen-Job und Notification-Erzeugung.
 |Datenschicht, externe Dienste.
 
 |Datenschicht
-|Persistente Speicherung von Nutzern (inkl. Budget), Abos, Kategorien, Zahlungen und Notifications;
-Absicherung durch Constraints und Indizes im einheitlichen PostgreSQL-Dialekt.
+|Persistente Speicherung von Nutzern (inkl. Budget), Abos, Kategorien, Zahlungen und Notifications; Absicherung durch Constraints und Indizes im einheitlichen PostgreSQL-Dialekt.
 |Keine äußeren Schichten.
 
 |Externe Dienste
@@ -243,50 +239,7 @@ Abos anlegen.
 |Prepared Statements, Connection Handling und Mapping von snake_case zu camelCase im einheitlichen PostgreSQL-Dialekt.
 |===
 
-== Feature-Verantwortlichkeiten
-
-[cols="1,2,3,3",options="header"]
-|===
-|Feature |Deckt ab |Frontend |Backend / Daten
-
-|`subscriptions`
-|F1 Abo-Verwaltung, F2 Vertragsdaten, Teile von F5, UC1/PAP 1.
-|Liste, Detail, Formular, Kategorieauswahl, Fristen-/Vertragsfelder, Pause, Löschen,
-Nutzungsbewertung.
-|`/api/subscriptions`, `/api/categories`, Tabellen `subscriptions`, `categories`.
-
-|`analysis`
-|F3 Kostenübersicht, F5 Optimierung, UC3/PAP 3.
-|Kosten-Kacheln, Kategoriechart, Verlauf, Prognose, Empfehlungen.
-|`/api/analysis`, SQL-Aggregation über `subscriptions` und `categories`.
-
-|`import-export`
-|F6 CSV-Import, automatische Erkennung, PDF/CSV-Export, UC4/PAP 4.
-|Upload, Kandidatenliste, Bestätigen/Verwerfen, Zusammenfassung, Export-Menü.
-|`/api/import/csv`, `/api/import/commit`, Export-Endpunkte.
-
-|`budget`
-|F7 Monatsbudget, Fortschritt, Sparziel, UC5/PAP 5.
-|Budgetformular, Fortschrittsbalken, Warnung, Sparziel.
-|`/api/budget/status`, `/api/budget`, Attribut `monthly_budget` in `users`.
-
-|`notifications`
-|F4 Erinnerungen/Warnungen, UC2/PAP 2.
-|Notification Center, Permission Prompt, Browser-Push-Anzeige.
-|`/api/notifications`, Tabelle `notifications`, Push Adapter, Deadline Job.
-
-|`settings`
-|F8 Währung, Benachrichtigungszeiten, Datensicherung.
-|Währungsauswahl, Reminder-Zeiten/Vorlauftage, Backup-/Sync-Panel.
-|Nutzerprofil in `users`, Auth-Kontext, optional Backup-/Export-Endpunkte.
-
-|`auth`
-|Login, Session und geschützte Bereiche.
-|Login, Logout, Session-Gate, geschützte Routen.
-|Supabase Auth oder Backend-Auth-Middleware.
-|===
-
-== Routenstruktur im Frontend
+=== Routenstruktur im Frontend
 
 [cols="1,2,3",options="header"]
 |===
@@ -329,212 +282,47 @@ Nutzungsbewertung.
 |F8: Währung, Benachrichtigungszeiten, Backup/Sync.
 |===
 
-== Datenmodell
+=== Feature-Verantwortlichkeiten
 
-Die technische Persistenzstruktur spiegelt das fachliche Domänenmodell wider.
-Die Datenbank
-verwendet snake_case, die API und TypeScript verwenden camelCase.
-
-=== Datenbankmodell
-
-[plantuml,data-model,svg]
-----
-@startuml
-skinparam linetype ortho
-
-entity "users" as users {
-  * id : SERIAL <<PK>>
-  --
-  * name : TEXT
-  * email : TEXT <<UNIQUE>>
-  * currency : TEXT
-  monthly_budget : NUMERIC
-  * notification_lead_days : INT
-}
-
-entity "categories" as categories {
-  * id : SERIAL <<PK>>
-  --
-  * name : TEXT <<UNIQUE>>
-  icon : TEXT
-  color : TEXT
-}
-
-entity "subscriptions" as subs {
-  * id : SERIAL <<PK>>
-  --
-  * user_id : INT <<FK>>
-  * category_id : INT <<FK>>
-  * name : TEXT
-  * provider : TEXT
-  * cost : NUMERIC(10,2)
-  * currency : TEXT
-  * interval : TEXT
-  * start_date : DATE
-  cancel_deadline : DATE
-  contract_end : DATE
-  * auto_renewal : BOOLEAN
-  * usage_rating : TEXT
-  * is_paused : BOOLEAN
-  * created_at : TIMESTAMPTZ
-}
-
-entity "payments" as payments {
-  * id : SERIAL <<PK>>
-  --
-  * subscription_id : INT <<FK>>
-  * date : DATE
-  * amount : NUMERIC
-  * status : TEXT
-}
-
-entity "notifications" as notif {
-  * id : SERIAL <<PK>>
-  --
-  * subscription_id : INT <<FK>>
-  * type : TEXT
-  * trigger_date : DATE
-  * is_sent : BOOLEAN
-  * message : TEXT
-}
-
-users ||--o{ subs : besitzt
-categories ||--o{ subs : ordnet
-subs ||--o{ payments : erzeugt
-subs ||--o{ notif : löst_aus
-@enduml
-----
-
-=== Tabellenbeschreibung
-
-[cols="1,1,3",options="header"]
+[cols="1,2,3,3",options="header"]
 |===
-|Tabelle |Spalte |Beschreibung und Besonderheiten
+|Feature |Deckt ab |Frontend |Backend / Daten
 
-.5+|`subscriptions`
-|`id`
-|Primärschlüssel.
+|`subscriptions`
+|F1 Abo-Verwaltung, F2 Vertragsdaten, Teile von F5, UC1/PAP 1.
+|Liste, Detail, Formular, Kategorieauswahl, Fristen-/Vertragsfelder, Pause, Löschen,
+Nutzungsbewertung.
+|`/api/subscriptions`, `/api/categories`, Tabellen `subscriptions`, `categories`.
 
-|`interval`
-|Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
-|`usage_rating`
-|Nutzungsbewertung: `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
-|`cancel_deadline`
-|Datum, bis zu dem gekündigt werden muss;
-Grundlage für PAP 2.
-|`is_paused`
-|Pausierte Abos werden bei Kostenanalyse und Fristenprüfung ignoriert.
+|`analysis`
+|F3 Kostenübersicht, F5 Optimierung, UC3/PAP 3.
+|Kosten-Kacheln, Kategoriechart, Verlauf, Prognose, Empfehlungen.
+|`/api/analysis`, SQL-Aggregation über `subscriptions` und `categories`.
 
-.2+|`payments`
-|`status`
-|Zahlungsstatus: `PENDING`, `PAID`, `FAILED`.
-|`subscription_id`
-|Fremdschlüssel;
-bei Löschung eines Abos werden Zahlungen kaskadierend gelöscht.
+|`import-export`
+|F6 CSV-Import, automatische Erkennung, PDF/CSV-Export, UC4/PAP 4.
+|Upload, Kandidatenliste, Bestätigen/Verwerfen, Zusammenfassung, Export-Menü.
+|`/api/import/csv`, `/api/import/commit`, Export-Endpunkte.
 
-.3+|`notifications`
-|`type`
-|Warnungsart, z.B. `CANCEL_DEADLINE_REMINDER`, `PAYMENT_REMINDER`, `BUDGET_WARNING`.
-|`trigger_date`
-|Datum, an dem die Erinnerung ausgelöst wird.
+|`budget`
+|F7 Monatsbudget, Fortschritt, Sparziel, UC5/PAP 5.
+|Budgetformular, Fortschrittsbalken, Warnung, Sparziel.
+|`/api/budget/status`, `/api/budget`, Attribut `monthly_budget` in `users`.
 
-|`is_sent`
-|Verhindert mehrfaches Senden derselben Erinnerung.
-|===
+|`notifications`
+|F4 Erinnerungen/Warnungen, UC2/PAP 2.
+|Notification Center, Permission Prompt, Browser-Push-Anzeige.
+|`/api/notifications`, Tabelle `notifications`, Push Adapter, Deadline Job.
 
-=== Shared TypeScript-Types
+|`settings`
+|F8 Währung, Benachrichtigungszeiten, Datensicherung.
+|Währungsauswahl, Reminder-Zeiten/Vorlauftage, Backup-/Sync-Panel.
+|Nutzerprofil in `users`, Auth-Kontext, optional Backup-/Export-Endpunkte.
 
-[source,ts]
-----
-export type Currency = 'EUR' | 'USD' | 'CHF';
-export type Interval = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
-export type UsageRating = 'OFTEN' | 'RARELY' | 'NEVER' | 'NOT_RATED';
-
-export interface Subscription {
-  id: number;
-  userId: number;
-  categoryId: number;
-  name: string;
-  provider: string;
-  cost: number;
-  currency: Currency;
-  interval: Interval;
-  startDate: string;
-  cancelDeadline: string | null;
-  contractEnd: string | null;
-  autoRenewal: boolean;
-  usageRating: UsageRating;
-  isPaused: boolean;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  icon: string | null;
-  color: string | null;
-}
-
-export type BudgetStatus =
-  | { status: 'NO_BUDGET' }
-  | { status: 'WITHIN_BUDGET'; spent: number; target: number; remaining: number }
-  | { status: 'OVER_BUDGET'; spent: number; target: number; overage: number };
-
-export interface AnalysisResponse {
-  totalMonthly: number;
-  yearlyTotal?: number;
-  savingsPotential: number;
-  byCategory: Array<{
-    categoryId: number;
-    categoryName: string;
-    monthlyCost: number;
-    subCount: number;
-  }>;
-  recommendations: string[];
-}
-----
-
-== REST-API-Konventionen
-
-[cols="1,3",options="header"]
-|===
-|Aspekt |Konvention
-
-|URL-Struktur
-|Ressourcenorientiert im Plural: `/api/subscriptions`, `/api/categories`, `/api/notifications`.
-
-|HTTP-Methoden
-|`GET` für Listen/Analyse/Status, `POST` für Anlegen und Import, `PATCH` für Bearbeiten,
-`DELETE` für Löschen, `PUT` für vollständiges Setzen wie Budget.
-
-|Payloads
-|JSON für Standardfälle, `FormData` für CSV-Upload.
-
-|Namenskonvention
-|API-Responses verwenden camelCase. Mapping von SQL snake_case passiert im Backend.
-
-|Fehlerformat
-|Validierungsfehler werden strukturiert zurückgegeben, z.B. `{ errors: string[] }`.
-
-|SQL-Sicherheit
-|Alle SQL-Variablen werden über Prepared Statements gebunden.
-|===
-
-[cols="1,1,2,3",options="header"]
-|===
-|Methode |Pfad |Use Case |Funktion
-
-|POST |`/api/subscriptions` |UC1 / PAP 1 |Abo anlegen.
-|GET |`/api/subscriptions` |F1 |Alle Abos auflisten.
-|PATCH |`/api/subscriptions/:id` |F1 |Abo bearbeiten.
-|DELETE |`/api/subscriptions/:id` |F1 |Abo löschen.
-|POST |`/api/subscriptions/:id/pause` |F1 |Abo pausieren oder fortsetzen.
-|GET |`/api/categories` |F1 |Kategorien laden.
-|GET |`/api/analysis` |UC3 / PAP 3 |Kostenanalyse und Empfehlungen.
-|POST |`/api/import/csv` |UC4 / PAP 4 |CSV hochladen und Vorschläge erhalten.
-|POST |`/api/import/commit` |UC4 / PAP 4 |Vorschläge bestätigen und Abos anlegen.
-|GET |`/api/budget/status` |UC5 / PAP 5 |Budgetstatus laden.
-|PUT |`/api/budget` |UC5 / PAP 5 |Monatsbudget setzen.
-|GET |`/api/notifications` |F4 / UC2 |Erinnerungen abrufen.
+|`auth`
+|Login, Session und geschützte Bereiche.
+|Login, Logout, Session-Gate, geschützte Routen.
+|Supabase Auth oder Backend-Auth-Middleware.
 |===
 
 == Wichtige Interaktionsflüsse
@@ -688,7 +476,212 @@ FE -> BE : Status neu laden
 @enduml
 ----
 
-== Eingesetzte Muster und Konventionen
+== Datenmodell
+=== Datenbankmodell
+
+[plantuml,data-model,svg]
+----
+@startuml
+skinparam linetype ortho
+
+entity "users" as users {
+  * id : SERIAL <<PK>>
+  --
+  * name : TEXT
+  * email : TEXT <<UNIQUE>>
+  * currency : TEXT
+  monthly_budget : NUMERIC
+  * notification_lead_days : INT
+}
+
+entity "categories" as categories {
+  * id : SERIAL <<PK>>
+  --
+  * name : TEXT <<UNIQUE>>
+  icon : TEXT
+  color : TEXT
+}
+
+entity "subscriptions" as subs {
+  * id : SERIAL <<PK>>
+  --
+  * user_id : INT <<FK>>
+  * category_id : INT <<FK>>
+  * name : TEXT
+  * provider : TEXT
+  * cost : NUMERIC(10,2)
+  * currency : TEXT
+  * interval : TEXT
+  * start_date : DATE
+  cancel_deadline : DATE
+  contract_end : DATE
+  * auto_renewal : BOOLEAN
+  * usage_rating : TEXT
+  * is_paused : BOOLEAN
+  * created_at : TIMESTAMPTZ
+}
+
+entity "payments" as payments {
+  * id : SERIAL <<PK>>
+  --
+  * subscription_id : INT <<FK>>
+  * date : DATE
+  * amount : NUMERIC
+  * status : TEXT
+}
+
+entity "notifications" as notif {
+  * id : SERIAL <<PK>>
+  --
+  * subscription_id : INT <<FK>>
+  * type : TEXT
+  * trigger_date : DATE
+  * is_sent : BOOLEAN
+  * message : TEXT
+}
+
+users ||--o{ subs : besitzt
+categories ||--o{ subs : ordnet
+subs ||--o{ payments : erzeugt
+subs ||--o{ notif : löst_aus
+@enduml
+----
+
+=== Tabellenbeschreibung
+
+[cols="1,1,3",options="header"]
+|===
+|Tabelle |Spalte |Beschreibung und Besonderheiten
+
+.4+|`users`
+|`id`
+|Primärschlüssel.
+
+|`email`
+|Eindeutige E-Mail-Adresse; dient als primäre Identifikation für den externen Auth-Dienst (Supabase).
+
+|`monthly_budget`
+|Speichert das global gesetzte Monatsbudget des Nutzers.
+
+|`notification_lead_days`
+|Globale Einstellung, wie viele Tage vor Ablauf der Kündigungsfrist gewarnt werden soll.
+
+.2+|`categories`
+|`id`
+|Primärschlüssel.
+
+|`name`
+|Eindeutiger Name der Kategorie (z. B. "Streaming", "Software"). Dient der Gruppierung in der Analyse.
+
+.5+|`subscriptions`
+|`id`
+|Primärschlüssel.
+
+|`interval`
+|Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
+
+|`usage_rating`
+|Nutzungsbewertung: `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
+
+|`cancel_deadline`
+|Datum, bis zu dem gekündigt werden muss; Grundlage für PAP 2.
+
+|`is_paused`
+|Pausierte Abos werden bei Kostenanalyse und Fristenprüfung ignoriert.
+.2+|`payments`
+|`status`
+|Zahlungsstatus: `PENDING`, `PAID`, `FAILED`.
+
+|`subscription_id`
+|Fremdschlüssel; bei Löschung eines Abos werden Zahlungen kaskadierend gelöscht.
+
+.3+|`notifications`
+|`type`
+|Warnungsart, z.B. `CANCEL_DEADLINE_REMINDER`, `PAYMENT_REMINDER`, `BUDGET_WARNING`.
+
+|`trigger_date`
+|Datum, an dem die Erinnerung ausgelöst wird.
+
+|`is_sent`
+|Verhindert mehrfaches Senden derselben Erinnerung.
+|===
+
+=== Datenbankmigrationen
+
+_Schemaänderungen werden nicht manuell durchgeführt, sondern über Migrationsskripte versioniert. So ist der Datenbankzustand jederzeit reproduzierbar._
+
+[cols="1,3", options="header"]
+|===
+| Aspekt | Beschreibung
+
+| Werkzeug
+|  Supabase CLI
+
+| Speicherort
+| //TODO
+
+| Namenskonvention
+| //TODO
+
+| Regel
+| //TOTO
+|===
+
+=== Shared TypeScript-Types
+
+[source,ts]
+----
+export type Currency = 'EUR' | 'USD' | 'CHF';
+export type Interval = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type UsageRating = 'OFTEN' | 'RARELY' | 'NEVER' | 'NOT_RATED';
+
+export interface Subscription {
+  id: number;
+  userId: number;
+  categoryId: number;
+  name: string;
+  provider: string;
+  cost: number;
+  currency: Currency;
+  interval: Interval;
+  startDate: string;
+  cancelDeadline: string | null;
+  contractEnd: string | null;
+  autoRenewal: boolean;
+  usageRating: UsageRating;
+  isPaused: boolean;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export type BudgetStatus =
+  | { status: 'NO_BUDGET' }
+  | { status: 'WITHIN_BUDGET'; spent: number; target: number; remaining: number }
+  | { status: 'OVER_BUDGET'; spent: number; target: number; overage: number };
+
+export interface AnalysisResponse {
+  totalMonthly: number;
+  yearlyTotal?: number;
+  savingsPotential: number;
+  byCategory: Array<{
+    categoryId: number;
+    categoryName: string;
+    monthlyCost: number;
+    subCount: number;
+  }>;
+  recommendations: string[];
+}
+----
+== Eingesetzte Muster & Konventionen
+
+_Dieser Abschnitt dokumentiert übergreifende Designmuster und Konventionen, die im gesamten Codebase gelten. Das verhindert, dass verschiedene Teammitglieder dasselbe Problem auf unterschiedliche Weise lösen._
+
+=== Designmuster
 
 [cols="1,2,3",options="header"]
 |===
@@ -730,7 +723,74 @@ berechnen.
 |Das Frontend muss alle Budgetzustände explizit behandeln.
 |===
 
-== UI-Zustände
+=== Fehlerbehandlung
+
+[cols="1,3", options="header"]
+|===
+| Aspekt | Konvention
+
+| Fachliche Fehler
+| Werden vom Express-Router als JSON-Response strukturiert zurückgegeben.
+
+| HTTP-Fehlercodes
+| 400 für Validierungsfehler; 401 für fehlende Authentifizierung; 404 für nicht gefundene Ressourcen; 500 für Systemfehler.
+
+| Fehlermeldungen
+| Immer strukturiert zurückgeben: `{ "errors": ["..."] }` — kein Stack Trace an den Client senden.
+
+| Logging
+| Fehler bei externen APIs (Supabase, Push) werden als ERROR geloggt; keine personenbezogenen Daten im Log.
+|===
+
+=== API-Konventionen
+
+[cols="1,3",options="header"]
+|===
+|Aspekt |Konvention
+
+|URL-Struktur
+|Ressourcenorientiert im Plural: `/api/subscriptions`, `/api/categories`, `/api/notifications`.
+
+|HTTP-Methoden
+|`GET` für Listen/Analyse/Status, `POST` für Anlegen und Import, `PATCH` für Bearbeiten,
+`DELETE` für Löschen, `PUT` für vollständiges Setzen wie Budget.
+
+|Payloads
+|JSON für Standardfälle, `FormData` für CSV-Upload.
+
+|Namenskonvention
+|API-Responses verwenden camelCase. Mapping von SQL snake_case passiert im Backend.
+
+|Fehlerformat
+|Validierungsfehler werden strukturiert zurückgegeben, z.B. `{ errors: string[] }`.
+
+|SQL-Sicherheit
+|Alle SQL-Variablen werden über Prepared Statements gebunden.
+|===
+
+*Übersicht der REST-Endpunkte:*
+
+[cols="1,1,2,3",options="header"]
+|===
+|Methode |Pfad |Use Case |Funktion
+
+|POST |`/api/subscriptions` |UC1 / PAP 1 |Abo anlegen.
+|GET |`/api/subscriptions` |F1 |Alle Abos auflisten.
+|PATCH |`/api/subscriptions/:id` |F1 |Abo bearbeiten.
+|DELETE |`/api/subscriptions/:id` |F1 |Abo löschen.
+|POST |`/api/subscriptions/:id/pause` |F1 |Abo pausieren oder fortsetzen.
+|GET |`/api/categories` |F1 |Kategorien laden.
+|GET |`/api/analysis` |UC3 / PAP 3 |Kostenanalyse und Empfehlungen.
+|POST |`/api/import/csv` |UC4 / PAP 4 |CSV hochladen und Vorschläge erhalten.
+|POST |`/api/import/commit` |UC4 / PAP 4 |Vorschläge bestätigen und Abos anlegen.
+|GET |`/api/budget/status` |UC5 / PAP 5 |Budgetstatus laden.
+|PUT |`/api/budget` |UC5 / PAP 5 |Monatsbudget setzen.
+|GET |`/api/notifications` |F4 / UC2 |Erinnerungen abrufen.
+|===
+
+== Ergänzende Projektdetails
+
+=== UI-Zustände
 
 [cols="1,3,3",options="header"]
 |===
@@ -761,7 +821,7 @@ berechnen.
 |Roter Fortschrittsbalken, konkreter Betrag der Überschreitung.
 |===
 
-== Traceability-Matrix
+=== Traceability-Matrix
 
 [cols="1,3,3",options="header"]
 |===
@@ -820,7 +880,7 @@ berechnen.
 |Sequenzdiagramm UC5.
 |===
 
-== Empfohlene Code-Struktur
+=== Empfohlene Code-Struktur
 
 [source,text]
 ----
@@ -866,7 +926,7 @@ subscriptionguard/
     types.ts
 ----
 
-== Umsetzungsreihenfolge
+=== Umsetzungsreihenfolge
 
 1. Monorepo mit `frontend`, `backend` und `shared` einrichten.
 2. Shared Types für `Subscription`, `Category`, `BudgetStatus`, `AnalysisResponse` anlegen.
