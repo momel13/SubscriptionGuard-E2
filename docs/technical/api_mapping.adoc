@@ -116,7 +116,7 @@ Die Tabelle `subscriptions` enthält die wichtigsten fachlichen Daten für Abos.
 | `currency`
 | Währung, z. B. `EUR`.
 
-| `payment`
+| `interval`
 | `interval`
 | Zahlungsintervall. Das Frontend erwartet z. B. `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
 
