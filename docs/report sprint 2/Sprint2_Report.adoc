@@ -1,9 +1,9 @@
 = Sprint-2-Report: Technischer Ansatz und agile Arbeitsweise
 
-Team:: SubscriptionGuard-Team
-Projektname:: SubscriptionGuard
+Team:: SubscriptionGuard-Team E2
+Projektname:: SubscriptionGuard 
 Datum:: 28.05.2026
-Repository-Link:: [Link zum GitHub-Repository einfügen]
+Repository-Link:: [https://github.com/momel13/SubscriptionGuard-E2.git]
 ====
 Dieser Report soll auf maximal einer Seite zeigen, wie Ihr Team in Sprint 2 gearbeitet hat,
 welche Praktiken Sie angewendet haben, welche technischen Artefakte entstanden sind und was Sie daraus gelernt haben.
@@ -32,23 +32,23 @@ welche Praktiken Sie angewendet haben, welche technischen Artefakte entstanden s
 
 | ADRs für wichtige technische Entscheidungen schreiben
 | Evaluation der Produktionsdatenbank und Entscheidung gegen SQLite und für Supabase (PostgreSQL).
-| docs/technical/ADRs/009-supabase-produktionsdatenbank.adoc
+| link:docs/technical/ADRs/009-supabase-produktionsdatenbank.adoc[ADR-009: Supabase Produktionsdatenbank]
 | Verbindliche Begründung für die Cloud-Datenbank zur Sicherstellung von Kündigungs-Cron-Jobs und Cross-Platform-Verfügbarkeit.
 
 | Systemgrenzen & C4-Diagramme erstellen
 | Modellierung der Systemarchitektur im C4-Kontext- und Containerdiagramm.
-| docs/technical/architecture.adoc
+| link:docs/technical/architecture.adoc[architecture.adoc]
 | Klare Architektur-Trennung zwischen Frontend, Backend (Express), Supabase Auth/DB und externen Push-Diensten geschaffen.
 
 | Partielles logisches Datenmodell erarbeiten & anpassen
 | Abgleich des ERDs mit der Live-Datenbank (UUIDs integrieren, Spalten wie interval und email angleichen).
-| docs/technical/design.adoc
+| link:docs/technical/design.adoc[design.adoc]
 | "Single Source of Truth" hergestellt. Diskrepanzen beseitigt, die spätere Backend-Fehler verursacht hätten.
 
 | Walking Skeleton aufbauen
 | Erstellung von Backend-Routen mit echter DB-Anbindung (pg-Treiber) und strukturiertem Mapping von snake_case auf camelCase.
-| docs/technical/walking-skeleton-guide.adoc +
-docs/technical/api_mapping.adoc
+| link:docs/technical/walking-skeleton-guide.adoc[walking-skeleton-guide.adoc] +
+link:docs/technical/api_mapping.adoc[api_mapping.adoc]
 | Beweis, dass Frontend und Backend über den definierten API-Vertrag reibungslos mit der Cloud-Datenbank interagieren können.
 |===
 
