@@ -654,7 +654,28 @@
 </div>
 
 <div class="demo-bar" id="data-source-label">Klickbarer Prototyp — Mock-Daten</div>
-//****
-<script src="app.js"></script>
+<script>
+  window.SubGuardDataSource = {
+    name: 'Live Express Backend (Authenticated)',
+    async loadDashboard() {
+      
+      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-token-subscriptionguard-2026';
+      
+      const response = await fetch('http://localhost:5000/api/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${testToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API-Request für Dashboard fehlgeschlagen! Status: ${response.status}`);
+      }
+
+      return response.json();
+    }
+  };
+</script><script src="app.js"></script>
 </body>
 </html>
