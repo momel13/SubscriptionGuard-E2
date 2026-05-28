@@ -37,30 +37,22 @@ SubscriptionGuard soll es ermöglichen Abonnements und laufenden Verträge einfa
 |===
 | Ereignis | Wann | Dauer | Moderation
 
-| Standup (Daily / Weekly)
-| täglich 09:30
-| 15 min
-| Product Owner/ Scrum Master
 
 | Sprint Planning
-| montags, Sprintstart
-| 2 h
+| Sprintstart
+| 1 h
 | Scrum Master
 
 | Sprint Review
-| freitags, Sprintende
+| Sprintende
 | 1 h
 | Product Owner
 
 | Retrospektive
-| freitags, nach Review
+| nach Review
 | 1 h
-| Scrum Master
+| Scrum Master, Product Owner
 
-| Backlog Refinement
-| mittwochs, wöchentlich
-| 1 h
-| Product Owner
 |===
 
 == Kommunikation
@@ -73,7 +65,7 @@ SubscriptionGuard soll es ermöglichen Abonnements und laufenden Verträge einfa
 | Discord
 
 | Entscheidungsprotokoll
-|
+| ADRs auf Github
 
 | Erwartete Reaktionszeit
 | Innerhalb von 24 Stunden an Werktagen
@@ -125,7 +117,7 @@ _Eine User Story gilt als fertig, wenn:_
 | jedes Teammitglied
 
 | Commit-Konventionen
-| [z. B. Conventional Commits]
+| Conventional Commits
 |===
 
 == Teamvereinbarungen
