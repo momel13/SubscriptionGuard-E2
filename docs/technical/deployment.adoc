@@ -8,9 +8,6 @@ include::../_includes/default-attributes.inc.adoc[]
 :toc-title: Inhalt
 :toclevels: 3
 
-// Testkommentar
-// Test2
-//Test3
 
 Dieses Dokument beschreibt die Schritte zur Installation und lokalen Ausführung des Prototyps für das Projekt SubscriptionGuard. Diese Anleitung dient als technische Evilenze für die lokale Lauffähigkeit unseres Walking Skeletons (Aufgabe 3.6).
 
