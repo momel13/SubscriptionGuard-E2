@@ -1,0 +1,28 @@
+= Protokoll: Retrospektive Sprint [2] – Team E2 (SubscriptionGuard)
+Kevin Fiek
+[Datum eintragen, z.B. 2026-06-08]
+
+*Teilnehmer:* [Namen aller Anwesenden eintragen]
+*Fokus:* [Optionales Hauptthema eintragen, z. B. Analyse der Teamzusammenarbeit]
+
+== 1. Was lief gut? 🟢
+_Dinge, die wir als Team beibehalten wollen._
+
+* [Hier ersten positiven Punkt eintragen]
+* [Hier zweiten positiven Punkt eintragen]
+* [...]
+
+== 2. Was müssen wir verbessern? 🔴
+_Probleme, Blockaden oder Prozesse, die uns ausgebremst haben (auf der Sachebene)._
+
+* [Hier erstes Problem eintragen]
+* [Hier zweites Problem eintragen]
+* [...]
+
+== 3. Beschlossene Action Items 🎯
+_Konkrete, verbindliche Maßnahmen für den nächsten Sprint. Wer macht was bis wann?_
+
+* *Action Item 1 ([Stichwort, z.B. Weekly]):* [Konkreten Beschluss eintragen] -> Verantwortlich: [Name oder "Alle"]
+* *Action Item 2 ([Stichwort, z.B. GitHub-Regeln]):* [Konkreten Beschluss eintragen] -> Verantwortlich: [Name oder "Alle"]
+* *Action Item 3 ([Stichwort]):* [...] -> Verantwortlich: [...]
+* *Action Item 4 ([Stichwort]):* [...] -> Verantwortlich: [...]
