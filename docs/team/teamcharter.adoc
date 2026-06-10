@@ -53,6 +53,16 @@ SubscriptionGuard soll es ermöglichen Abonnements und laufenden Verträge einfa
 | 1 h
 | Scrum Master, Product Owner
 
+| Weekly Standup
+| Mittwoch 14:15
+| max 1 h
+| Scrum Master
+
+| Optionaler Dev-Sync
+| Dienstag 13:00
+| 30 min
+| Tech Lead
+
 |===
 
 == Kommunikation
