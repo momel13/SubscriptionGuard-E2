@@ -94,7 +94,7 @@ Die Tabelle `subscriptions` enthält die wichtigsten fachlichen Daten für Abos.
 
 | `user_id`
 | `userId`
-| Zuordnung zum Nutzer. Für das Dashboard muss nach dem aktuellen Nutzer gefiltert werden.
+| Zuordnung zum Nutzer als `UUID`-String (Referenz auf `auth.users`). Für das Dashboard muss nach dem aktuellen Nutzer gefiltert werden.
 
 | `category_id`
 | `categoryId`
@@ -151,6 +151,7 @@ Beispiel:
 ----
 {
   "id": 1,
+  "userId": "3f9a1c2e-7b4d-4e8a-9c1f-2a6b8d0e5f31",
   "categoryId": 1,
   "name": "Netflix",
   "provider": "Netflix",
@@ -250,6 +251,7 @@ Das Budget liegt laut Datenmodell im Nutzerprofil bzw. in der Tabelle `users`.
   "subscriptions": [
     {
       "id": 1,
+      "userId": "3f9a1c2e-7b4d-4e8a-9c1f-2a6b8d0e5f31",
       "categoryId": 1,
       "name": "Netflix",
       "provider": "Netflix",

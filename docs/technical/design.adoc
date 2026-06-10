@@ -485,7 +485,7 @@ FE -> BE : Status neu laden
 skinparam linetype ortho
 
 entity "users" as users {
-  * id : SERIAL <<PK>>
+  * id : UUID <<PK>>
   --
   * name : TEXT
   * email : TEXT <<UNIQUE>>
@@ -505,7 +505,7 @@ entity "categories" as categories {
 entity "subscriptions" as subs {
   * id : SERIAL <<PK>>
   --
-  * user_id : INT <<FK>>
+  * user_id : UUID <<FK>>
   * category_id : INT <<FK>>
   * name : TEXT
   * provider : TEXT
@@ -555,7 +555,7 @@ subs ||--o{ notif : löst_aus
 
 .4+|`users`
 |`id`
-|Primärschlüssel.
+|Primärschlüssel als UUID; entspricht der Nutzer-ID aus Supabase Auth (`auth.users.id`).
 
 |`email`
 |Eindeutige E-Mail-Adresse; dient als primäre Identifikation für den externen Auth-Dienst (Supabase).
@@ -573,9 +573,12 @@ subs ||--o{ notif : löst_aus
 |`name`
 |Eindeutiger Name der Kategorie (z. B. "Streaming", "Software"). Dient der Gruppierung in der Analyse.
 
-.5+|`subscriptions`
+.6+|`subscriptions`
 |`id`
 |Primärschlüssel.
+
+|`user_id`
+|Fremdschlüssel als `UUID` auf `auth.users(id)`. Ordnet das Abo dem angemeldeten Nutzer zu; für das Dashboard wird nach diesem Wert gefiltert.
 
 |`interval`
 |Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
@@ -637,7 +640,7 @@ export type UsageRating = 'OFTEN' | 'RARELY' | 'NEVER' | 'NOT_RATED';
 
 export interface Subscription {
   id: number;
-  userId: number;
+  userId: string;
   categoryId: number;
   name: string;
   provider: string;
