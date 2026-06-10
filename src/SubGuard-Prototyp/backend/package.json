@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "ts-node --esm src/app.ts",
+    "dev": "tsx watch src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js"
   },
@@ -14,7 +14,10 @@
     "express": "^5.1.0"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.9.2"
   }
 }

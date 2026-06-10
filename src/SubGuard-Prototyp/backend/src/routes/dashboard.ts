@@ -1,6 +1,6 @@
 import express from 'express';
-import { supabase } from '../supabase.ts';
-import { buildDashboardPayload } from '../mappers/dashboardMapper.ts';
+import { supabase } from '../supabase.js';
+import { buildDashboardPayload } from '../mappers/dashboardMapper.js';
 
 const router = express.Router();
 
