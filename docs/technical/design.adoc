@@ -573,9 +573,12 @@ subs ||--o{ notif : löst_aus
 |`name`
 |Eindeutiger Name der Kategorie (z. B. "Streaming", "Software"). Dient der Gruppierung in der Analyse.
 
-.5+|`subscriptions`
+.6+|`subscriptions`
 |`id`
 |Primärschlüssel.
+
+|`user_id`
+|Fremdschlüssel als `UUID` auf `auth.users(id)`. Ordnet das Abo dem angemeldeten Nutzer zu; für das Dashboard wird nach diesem Wert gefiltert.
 
 |`interval`
 |Enum-Constraint: `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
