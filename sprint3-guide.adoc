@@ -1,0 +1,36 @@
+📢 Wichtiges Update zur Code-Basis & Aufgabenverteilung ("Abos erfassen")
+
+Hey Leute,
+kurze Info für alle, damit wir uns nicht gegenseitig blockieren oder das Repo zumüllen: Wir brauchen aktuell KEINE neuen Dateien anzulegen! Das gesamte Fundament für Frontend und Backend steht bereits. Wir coden alle in den bestehenden Dateien weiter.
+
+Hier ist die exakte Aufteilung, wer in welcher Datei für die Sub-Issues arbeitet:
+
+🎨 FRONTEND (HTML / JavaScript)
+
+#51 (Wireframe & Layout aufbauen) ➔ 📂 index.html (Bereich: <section id="view-subscriptions">)
+
+#52 (UI-Formular für neues Abo bauen) ➔ 📂 index.html (Inputs für Name, Preis, Intervall etc. ergänzen)
+
+#53 (Formular-Validierung Frontend) ➔ 📂 app (2).js (Prüfen, ob Felder leer sind, bevor abgeschickt wird)
+
+#54 (POST-Fetch implementieren) ➔ 📂 app (2).js (oder im Script-Tag der index.html – die Funktion für den echten API-Call schreiben)
+
+#55 (Erfolgs-Feedback anzeigen) ➔ 📂 app (2).js (UI-Zustand updaten / Toast-Meldung triggern)
+
+💻 BACKEND (Express / TypeScript / Supabase)
+
+Hinweis: Unser Backend-Code liegt komplett im Ordner src/!
+
+#48 (Route POST /api/subscriptions erstellen) ➔ 📂 src/app.ts (Express-Endpunkt registrieren)
+
+#49 (Backend-Validierung hinzufügen) ➔ 📂 src/app.ts (Prüfen, ob req.body vollständig ist)
+
+#50 (Insert-Logik Supabase schreiben) ➔ 📂 src/app.ts (Datenbankverbindung nutzen und Insert ausführen)
+
+🤝 WICHTIGER ABGLEICH
+
+Schaut vor dem Coden bitte alle einmal in die frontend-backend-contract.md. Dort steht genau drin, wie die JSON-Daten (Payloads) aufgebaut sein müssen, damit Frontend und Backend fehlerfrei miteinander sprechen!
+
+⚠️ Kleiner Bugfix vorab: In unserer env (1).txt läuft das Backend auf Port 5001, in der index.html (ganz unten bei Zeile 422) versucht das Frontend aber noch auf Port 5000 zuzugreifen. Bitte lokal bei euch anpassen, sonst findet das Frontend das Backend nicht!
+
+Bitte denkt an die Git-Regel aus der Retro: Für jeden Task einen eigenen Branch erstellen und erst per Pull Request (Code Review) auf den Hauptzweig mergen! Let's go! 🚀
