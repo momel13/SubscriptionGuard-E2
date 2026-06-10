@@ -1,8 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import dashboardRouter from './routes/dashboard.ts';
-
+import dashboardRouter from './routes/dashboard.js';
 dotenv.config();
 
 const app = express();
