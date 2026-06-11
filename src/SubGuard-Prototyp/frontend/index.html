@@ -260,6 +260,21 @@
   .form-field { display: grid; gap: 6px; }
   .form-field label { font-size: 12px; color: var(--muted); font-weight: 600; }
   .form-field.full { grid-column: 1 / -1; }
+  .field-error { min-height: 16px; color: var(--red); font-size: 11px; font-weight: 600; }
+  .field-error:empty { display: none; }
+  .search.is-invalid, select.filter.is-invalid {
+    border-color: rgba(239,68,68,0.75);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.14);
+  }
+  .form-alert {
+    display: none; margin-bottom: 12px; padding: 10px 12px; border-radius: 10px;
+    background: rgba(239,68,68,0.12); color: var(--red);
+    font-size: 13px; font-weight: 600;
+  }
+  .form-alert.visible { display: block; }
+  .btn:disabled {
+    cursor: not-allowed; opacity: 0.55; filter: grayscale(0.25);
+  }
   .form-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
   .switch-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -432,53 +447,61 @@
           <h3 class="card-title">Abo anlegen</h3>
           <span class="badge brand">UC1 / PAP 1</span>
         </div>
+        <form id="subscription-form" novalidate>
+        <div class="form-alert" id="subscription-form-alert" role="alert" aria-live="polite"></div>
         <div class="form-grid">
           <div class="form-field">
-            <label>Name</label>
-            <input class="search" value="Disney+ Premium" />
+            <label for="subscription-name">Name</label>
+            <input class="search" id="subscription-name" name="name" value="Disney+ Premium" required aria-describedby="subscription-name-error" />
+            <div class="field-error" id="subscription-name-error"></div>
           </div>
           <div class="form-field">
-            <label>Anbieter</label>
-            <input class="search" value="Disney" />
+            <label for="subscription-provider">Anbieter</label>
+            <input class="search" id="subscription-provider" name="provider" value="Disney" required aria-describedby="subscription-provider-error" />
+            <div class="field-error" id="subscription-provider-error"></div>
           </div>
           <div class="form-field">
-            <label>Kategorie</label>
-            <select class="filter" id="subscription-category-select"></select>
+            <label for="subscription-category-select">Kategorie</label>
+            <select class="filter" id="subscription-category-select" name="categoryId" required aria-describedby="subscription-category-error"></select>
+            <div class="field-error" id="subscription-category-error"></div>
           </div>
           <div class="form-field">
-            <label>Nutzung</label>
-            <select class="filter">
-              <option>Häufig</option><option>Selten</option><option>Nie</option><option>Nicht bewertet</option>
+            <label for="subscription-usage">Nutzung</label>
+            <select class="filter" id="subscription-usage" name="usageRating">
+              <option value="OFTEN">Häufig</option><option value="RARELY">Selten</option><option value="NEVER">Nie</option><option value="NOT_RATED">Nicht bewertet</option>
             </select>
           </div>
           <div class="form-field">
-            <label>Kosten</label>
-            <input class="search" type="number" value="8.99" />
+            <label for="subscription-cost">Kosten</label>
+            <input class="search" id="subscription-cost" name="cost" type="number" min="0.01" step="0.01" value="8.99" required aria-describedby="subscription-cost-error" />
+            <div class="field-error" id="subscription-cost-error"></div>
           </div>
           <div class="form-field">
-            <label>Intervall</label>
-            <select class="filter"><option>MONTHLY</option><option>YEARLY</option><option>QUARTERLY</option><option>WEEKLY</option></select>
+            <label for="subscription-interval">Intervall</label>
+            <select class="filter" id="subscription-interval" name="interval" required aria-describedby="subscription-interval-error"><option value="MONTHLY">MONTHLY</option><option value="YEARLY">YEARLY</option><option value="QUARTERLY">QUARTERLY</option><option value="WEEKLY">WEEKLY</option></select>
+            <div class="field-error" id="subscription-interval-error"></div>
           </div>
           <div class="form-field">
-            <label>Kündigungsfrist</label>
-            <input class="search" type="date" value="2026-06-15" />
+            <label for="subscription-cancel-deadline">Kündigungsfrist</label>
+            <input class="search" id="subscription-cancel-deadline" name="cancelDeadline" type="date" value="2026-06-15" />
           </div>
           <div class="form-field">
-            <label>Vertragsende</label>
-            <input class="search" type="date" value="2026-07-15" />
+            <label for="subscription-contract-end">Vertragsende</label>
+            <input class="search" id="subscription-contract-end" name="contractEnd" type="date" value="2026-07-15" />
           </div>
           <div class="form-field full">
             <div class="switch-row">
-              <span>Automatische Verlängerung</span>
-              <input type="checkbox" checked />
+              <label for="subscription-auto-renewal" style="font-size:14px;color:var(--fg);">Automatische Verlängerung</label>
+              <input id="subscription-auto-renewal" name="autoRenewal" type="checkbox" checked />
             </div>
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn">Speichern</button>
-          <button class="btn subtle">Pausieren</button>
-          <button class="btn subtle">Löschen</button>
+          <button class="btn" id="subscription-submit" type="submit">Speichern</button>
+          <button class="btn subtle" type="button">Pausieren</button>
+          <button class="btn subtle" type="button">Löschen</button>
         </div>
+        </form>
       </div>
     </section>
 
