@@ -36,6 +36,25 @@ app.post('/api/subscriptions', async (req, res): Promise<any> => {
 
     // ---------------------------------------------------------
     // TODO #49: subscriptionPayload validieren
+
+    const { name, cost, interval } = subscriptionPayload;
+
+    // 1. Prüfen, ob Pflichtfelder fehlen
+    if (!name || cost === undefined || cost === null || !interval) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Validierung fehlgeschlagen: Name, Preis (cost) und Intervall sind Pflichtfelder.'
+      });
+    }
+
+    // 2. Prüfen, ob der Preis ein gültiges Format hat (Zahl und nicht negativ)
+    if (typeof cost !== 'number' || cost < 0) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Validierung fehlgeschlagen: Der Preis muss eine gültige, positive Zahl sein.'
+      });
+    }
+
     // TODO #50: Mit eurer 'supabase.ts' die Daten in die DB schreiben
     // ---------------------------------------------------------
 
