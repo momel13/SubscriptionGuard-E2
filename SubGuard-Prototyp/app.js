@@ -1,3 +1,4 @@
+//
 const MOCK_DASHBOARD = {
   budgetTarget: 80,
   categories: [
@@ -92,6 +93,188 @@ function normalizeSubscription(raw, categories) {
     isPaused: raw.isPaused ?? raw.paused ?? false,
     deadline: raw.deadline ?? daysUntil(raw.cancelDeadline),
   };
+}
+
+function getSubscriptionFormElements() {
+  const form = document.getElementById('subscription-form');
+  if (!form) return null;
+
+  return {
+    form,
+    alert: document.getElementById('subscription-form-alert'),
+    submit: document.getElementById('subscription-submit'),
+    fields: {
+      name: document.getElementById('subscription-name'),
+      provider: document.getElementById('subscription-provider'),
+      categoryId: document.getElementById('subscription-category-select'),
+      cost: document.getElementById('subscription-cost'),
+      interval: document.getElementById('subscription-interval'),
+      usageRating: document.getElementById('subscription-usage'),
+      cancelDeadline: document.getElementById('subscription-cancel-deadline'),
+      contractEnd: document.getElementById('subscription-contract-end'),
+      autoRenewal: document.getElementById('subscription-auto-renewal'),
+    },
+  };
+}
+
+function setFieldError(input, errorId, message, showError) {
+  const error = document.getElementById(errorId);
+  const hasError = Boolean(message);
+  if (!input) return;
+
+  input.classList.toggle('is-invalid', hasError && showError);
+  input.setAttribute('aria-invalid', String(hasError && showError));
+  if (error) error.textContent = showError ? message : '';
+}
+
+function validateSubscriptionForm(showErrors = false) {
+  const elements = getSubscriptionFormElements();
+  if (!elements) return { valid: true, values: null };
+
+  const { fields } = elements;
+  const costRaw = fields.cost.value.trim();
+  const categoryRaw = fields.categoryId.value;
+  const values = {
+    name: fields.name.value.trim(),
+    provider: fields.provider.value.trim(),
+    categoryId: categoryRaw ? Number(categoryRaw) : null,
+    cost: costRaw === '' ? null : Number(costRaw),
+    interval: fields.interval.value,
+    usageRating: fields.usageRating.value || 'NOT_RATED',
+    cancelDeadline: fields.cancelDeadline.value || null,
+    contractEnd: fields.contractEnd.value || null,
+    autoRenewal: fields.autoRenewal.checked,
+  };
+  const errors = {};
+
+  if (!values.name) errors.name = 'Bitte gib einen Namen ein.';
+  if (!values.provider) errors.provider = 'Bitte gib einen Anbieter ein.';
+  if (!values.categoryId) errors.categoryId = 'Bitte wähle eine Kategorie aus.';
+  if (costRaw === '') errors.cost = 'Bitte gib die Kosten ein.';
+  else if (!Number.isFinite(values.cost) || values.cost <= 0) errors.cost = 'Kosten müssen größer als 0 sein.';
+  if (!values.interval) errors.interval = 'Bitte wähle ein Intervall aus.';
+
+  const visibleError = (key) => showErrors || fields[key]?.dataset.touched === 'true';
+  setFieldError(fields.name, 'subscription-name-error', errors.name, visibleError('name'));
+  setFieldError(fields.provider, 'subscription-provider-error', errors.provider, visibleError('provider'));
+  setFieldError(fields.categoryId, 'subscription-category-error', errors.categoryId, visibleError('categoryId'));
+  setFieldError(fields.cost, 'subscription-cost-error', errors.cost, visibleError('cost'));
+  setFieldError(fields.interval, 'subscription-interval-error', errors.interval, visibleError('interval'));
+
+  const valid = Object.keys(errors).length === 0;
+  if (elements.submit) elements.submit.disabled = !valid;
+  if (elements.alert) {
+    elements.alert.textContent = showErrors && !valid ? 'Bitte fülle alle Pflichtfelder korrekt aus, bevor gespeichert wird.' : '';
+    elements.alert.classList.toggle('visible', showErrors && !valid);
+  }
+
+  return { valid, values };
+}
+
+function buildSubscriptionPayload(values) {
+  return {
+    categoryId: values.categoryId,
+    name: values.name,
+    provider: values.provider,
+    cost: values.cost,
+    currency: 'EUR',
+    interval: values.interval,
+    startDate: today.toISOString().slice(0, 10),
+    cancelDeadline: values.cancelDeadline,
+    contractEnd: values.contractEnd,
+    autoRenewal: values.autoRenewal,
+    usageRating: values.usageRating,
+    isPaused: false,
+  };
+}
+
+// ✅ NEU: Toast-Nachricht anzeigen
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position:fixed; bottom:60px; left:50%; transform:translateX(-50%);
+    z-index:9999; background:#10b981; color:white;
+    padding:12px 24px; border-radius:12px; font-size:14px;
+    font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    transition:opacity 0.4s; white-space:nowrap;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+async function handleSubscriptionSubmit(event) {
+  event.preventDefault();
+
+  const { valid, values } = validateSubscriptionForm(true);
+  if (!valid) return;
+
+  const elements = getSubscriptionFormElements();
+  const payload = buildSubscriptionPayload(values);
+  const submitLabel = elements.submit?.textContent || 'Speichern';
+  let saveFailed = false;
+
+  try {
+    if (elements.submit) {
+      elements.submit.disabled = true;
+      elements.submit.textContent = 'Speichern...';
+    }
+
+    const savedSubscription = typeof dataSource.createSubscription === 'function'
+      ? await dataSource.createSubscription(payload)
+      : { ...payload, id: Date.now() };
+
+    appState.subscriptions = appState.subscriptions.concat(normalizeSubscription(savedSubscription || payload, appState.categories));
+    renderDashboard();
+    renderBudget();
+    renderSubs();
+    renderAnalysis();
+
+    // ✅ NEU: Toast anzeigen und zur Abo-Liste scrollen
+    showToast('✓ Abo erfolgreich gespeichert!');
+    document.getElementById('subs-grid').scrollIntoView({ behavior: 'smooth' });
+
+  } catch (error) {
+    saveFailed = true;
+    console.error('Subscription could not be saved.', error);
+    if (elements.alert) {
+      elements.alert.textContent = 'Das Abo konnte nicht gespeichert werden. Bitte versuche es erneut.';
+      elements.alert.classList.add('visible');
+    }
+  } finally {
+    if (elements.submit) elements.submit.textContent = submitLabel;
+    const currentValidation = validateSubscriptionForm(false);
+    if (saveFailed && currentValidation.valid && elements.alert) {
+      elements.alert.textContent = 'Das Abo konnte nicht gespeichert werden. Bitte versuche es erneut.';
+      elements.alert.classList.add('visible');
+    }
+  }
+}
+
+function setupSubscriptionFormValidation() {
+  const elements = getSubscriptionFormElements();
+  if (!elements) return;
+
+  Object.values(elements.fields).forEach((field) => {
+    if (!field || field.dataset.validationBound === 'true') return;
+    field.dataset.validationBound = 'true';
+    field.addEventListener('input', () => {
+      field.dataset.touched = 'true';
+      validateSubscriptionForm(false);
+    });
+    field.addEventListener('change', () => {
+      field.dataset.touched = 'true';
+      validateSubscriptionForm(false);
+    });
+  });
+
+  if (elements.form.dataset.validationBound !== 'true') {
+    elements.form.dataset.validationBound = 'true';
+    elements.form.addEventListener('submit', handleSubscriptionSubmit);
+  }
+
+  validateSubscriptionForm(false);
 }
 
 function statCard(label, value, hint, icon, cls) {
@@ -203,12 +386,17 @@ function renderCategoryControls() {
   const filterOptions = ['<option value="">Alle Kategorien</option>']
     .concat(appState.categories.map((c) => `<option value="${c.name}">${c.name}</option>`))
     .join('');
-  const formOptions = appState.categories
+  const formOptions = ['<option value="">Kategorie wählen</option>']
+    .concat(appState.categories
     .map((c) => `<option value="${c.id}">${c.icon || ''} ${c.name}</option>`)
-    .join('');
+    ).join('');
 
   if (filter) filter.innerHTML = filterOptions;
-  if (formSelect) formSelect.innerHTML = formOptions;
+  if (formSelect) {
+    formSelect.innerHTML = formOptions;
+    if (!formSelect.value && appState.categories.length) formSelect.value = String(appState.categories[0].id);
+  }
+  validateSubscriptionForm(false);
 }
 
 function renderSubs() {
@@ -429,6 +617,7 @@ function filterCat(v) {
 async function init() {
   document.querySelectorAll('.nav-item').forEach((n) => n.addEventListener('click', () => go(n.dataset.view)));
   document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => go(b.dataset.go)));
+  setupSubscriptionFormValidation();
   window.filterSubs = filterSubs;
   window.filterCat = filterCat;
 
