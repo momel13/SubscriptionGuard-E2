@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import dashboardRouter from './routes/dashboard.js';
+import { supabase } from './supabase.js';
 dotenv.config();
 
 const app = express();
@@ -55,13 +56,51 @@ app.post('/api/subscriptions', async (req, res): Promise<any> => {
       });
     }
 
-    // TODO #50: Mit eurer 'supabase.ts' die Daten in die DB schreiben
-    // ---------------------------------------------------------
+    const token = authHeader.replace('Bearer ', '');
 
-    // 3. Erfolgreiche Antwort ans Frontend senden
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !authData.user) {
+      return res.status(401).json({
+        error: 'Nicht autorisiert.',
+        message: 'Der übergebene Token ist ungültig.',
+      });
+    }
+
+    const insertPayload = {
+      user_id: authData.user.id,
+      category_id: subscriptionPayload.categoryId,
+      name: subscriptionPayload.name,
+      provider: subscriptionPayload.provider,
+      cost: subscriptionPayload.cost,
+      currency: subscriptionPayload.currency,
+      payment_interval: subscriptionPayload.interval,
+      start_date: subscriptionPayload.startDate,
+      cancel_deadline: subscriptionPayload.cancelDeadline ?? null,
+      contract_end: subscriptionPayload.contractEnd ?? null,
+      auto_renewal: subscriptionPayload.autoRenewal ?? false,
+      usage_rating: subscriptionPayload.usageRating ?? 'NOT_RATED',
+      is_paused: subscriptionPayload.isPaused ?? false,
+    };
+
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .insert(insertPayload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase-Fehler bei Insert:', error);
+
+      return res.status(500).json({
+        error: 'Datenbankfehler',
+        message: 'Das neue Abo konnte nicht gespeichert werden.',
+      });
+    }
+
     return res.status(201).json({
-      message: 'Route steht! Daten erfolgreich im Backend empfangen.',
-      receivedData: subscriptionPayload
+      message: 'Abo erfolgreich gespeichert.',
+      subscription: data,
     });
 
   } catch (error) {
