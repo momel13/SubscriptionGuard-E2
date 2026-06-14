@@ -1,0 +1,297 @@
+= API-Mapping für das Walking Skeleton: {SubscriptionGuard-E2}
+Mohsen <mohsen.hosseinzadehyousefi2@stud.htw-dresden.de>
+{localdatetime}
+include::../_includes/default-attributes.inc.adoc[]
+
+:toc:
+:toc-title: Inhalt
+:toclevels: 3
+:sectnums:
+
+== Ziel des Dokuments
+
+Dieses Dokument beschreibt das Mapping zwischen den Daten aus der Supabase/PostgreSQL-Datenbank und dem vom Frontend erwarteten API-Format für das Walking Skeleton in Aufgabe 3.6.
+
+Die Datenbank verwendet `snake_case`, während das Frontend laut `frontend-backend-contract.md`, `design.adoc` und `walking-skeleton-guide.adoc` Daten im `camelCase`-Format erwartet.
+
+Das Mapping ist deshalb wichtig, damit das Frontend später nicht direkt von Datenbankspalten abhängig ist.
+
+== Grundprinzip
+
+Die Daten werden im Backend aus Supabase/PostgreSQL gelesen und dort in das erwartete Frontend-Format umgewandelt.
+
+Dabei gilt:
+
+* SQL-Tabellen und Spalten bleiben in `snake_case`.
+* API-Responses verwenden `camelCase`.
+* Das Frontend arbeitet nur mit fachlichen API-Daten.
+* Supabase-Tabellen sollen nicht direkt vom Frontend für fachliche Daten gelesen werden.
+* Secrets oder Service-Role-Keys dürfen niemals im Frontend verwendet werden.
+
+== Erwartetes Dashboard-Payload
+
+Das Frontend erwartet für das Dashboard ungefähr folgende Struktur:
+
+[source,ts]
+----
+type DashboardPayload = {
+  categories: Category[];
+  subscriptions: Subscription[];
+  notifications: Notification[];
+  importCandidates?: ImportCandidate[];
+  budgetTarget: number;
+};
+----
+
+== Mapping: Kategorien
+
+Die Tabelle `categories` enthält bereits Seed-Daten und wird für die Kategorieauswahl und die Darstellung im Dashboard genutzt.
+
+[cols="1,1,2", options="header"]
+|===
+| Datenbankfeld | API-Feld | Bemerkung
+
+| `id`
+| `id`
+| Eindeutige ID der Kategorie.
+
+| `name`
+| `name`
+| Name der Kategorie, z. B. Streaming, Musik oder Software.
+
+| `icon`
+| `icon`
+| Icon für die Darstellung im Frontend.
+
+| `color`
+| `color`
+| Farbe für Diagramme oder Kategorieanzeige.
+|===
+
+Beispiel:
+
+[source,json]
+----
+{
+  "id": 1,
+  "name": "Streaming",
+  "icon": "🎬",
+  "color": "#a855f7"
+}
+----
+
+== Mapping: Abonnements
+
+Die Tabelle `subscriptions` enthält die wichtigsten fachlichen Daten für Abos. Hier ist das Mapping besonders wichtig, weil mehrere Datenbankspalten in `snake_case` vorliegen.
+
+[cols="1,1,2", options="header"]
+|===
+| Datenbankfeld | API-Feld | Bemerkung
+
+| `id`
+| `id`
+| Eindeutige ID des Abos.
+
+| `user_id`
+| `userId`
+| Zuordnung zum Nutzer als `UUID`-String (Referenz auf `auth.users`). Für das Dashboard muss nach dem aktuellen Nutzer gefiltert werden.
+
+| `category_id`
+| `categoryId`
+| Zuordnung zur Kategorie.
+
+| `name`
+| `name`
+| Name des Abos.
+
+| `provider`
+| `provider`
+| Anbieter, z. B. Netflix oder Spotify.
+
+| `cost`
+| `cost`
+| Kosten des Abos. Sollte als Zahl zurückgegeben werden.
+
+| `currency`
+| `currency`
+| Währung, z. B. `EUR`.
+
+| `interval`
+| `interval`
+| Zahlungsintervall. Das Frontend erwartet z. B. `WEEKLY`, `MONTHLY`, `QUARTERLY`, `YEARLY`.
+
+| `start_date`
+| `startDate`
+| Startdatum im Format `YYYY-MM-DD`.
+
+| `cancel_deadline`
+| `cancelDeadline`
+| Kündigungsfrist. Kann auch `null` sein.
+
+| `contract_end`
+| `contractEnd`
+| Vertragsende. Kann auch `null` sein.
+
+| `auto_renewal`
+| `autoRenewal`
+| Gibt an, ob sich das Abo automatisch verlängert.
+
+| `usage_rating`
+| `usageRating`
+| Nutzungsbewertung, z. B. `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
+
+| `is_paused`
+| `isPaused`
+| Gibt an, ob ein Abo pausiert ist.
+|===
+
+Beispiel:
+
+[source,json]
+----
+{
+  "id": 1,
+  "userId": "3f9a1c2e-7b4d-4e8a-9c1f-2a6b8d0e5f31",
+  "categoryId": 1,
+  "name": "Netflix",
+  "provider": "Netflix",
+  "cost": 12.99,
+  "currency": "EUR",
+  "interval": "MONTHLY",
+  "startDate": "2026-05-01",
+  "cancelDeadline": "2026-06-20",
+  "contractEnd": null,
+  "autoRenewal": true,
+  "usageRating": "OFTEN",
+  "isPaused": false
+}
+----
+
+== Mapping: Notifications
+
+Im aktuellen Guide steht im Beispiel noch `notifications: []`. Da in Supabase bereits eine Tabelle `notifications` existiert, kann das Mapping dafür vorbereitet werden.
+
+[cols="1,1,2", options="header"]
+|===
+| Datenbankfeld | API-Feld | Bemerkung
+
+| `id`
+| `id`
+| Eindeutige ID der Notification.
+
+| `subscription_id`
+| `subscriptionId`
+| Zuordnung zum betroffenen Abo.
+
+| `type`
+| `type`
+| Art der Benachrichtigung, z. B. Kündigungsfrist oder Budgetwarnung.
+
+| `trigger_date`
+| `triggerDate`
+| Datum, an dem die Benachrichtigung ausgelöst werden soll.
+
+| `is_sent`
+| `isSent`
+| Gibt an, ob die Benachrichtigung bereits gesendet wurde.
+
+| `message`
+| `message`
+| Nachrichtentext.
+|===
+
+Für das bestehende Frontend kann daraus zusätzlich eine vereinfachte Anzeige erzeugt werden:
+
+[source,json]
+----
+{
+  "id": 1,
+  "icon": "⚠️",
+  "color": "yellow",
+  "msg": "Kündigungsfrist läuft bald ab",
+  "meta": "in 5 Tagen",
+  "unread": true
+}
+----
+
+== Mapping: Budget
+
+Das Budget liegt laut Datenmodell im Nutzerprofil bzw. in der Tabelle `users`.
+
+[cols="1,1,2", options="header"]
+|===
+| Datenbankfeld | API-Feld | Bemerkung
+
+| `monthly_budget`
+| `budgetTarget`
+| Zielwert für das monatliche Budget im Dashboard.
+
+| `currency`
+| `currency`
+| Währung des Nutzers.
+
+| `notification_lead_days`
+| `notificationLeadDays`
+| Vorlaufzeit für Benachrichtigungen.
+|===
+
+== Beispiel für ein komplettes Dashboard-Payload
+
+[source,json]
+----
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Streaming",
+      "icon": "🎬",
+      "color": "#a855f7"
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": 1,
+      "userId": "3f9a1c2e-7b4d-4e8a-9c1f-2a6b8d0e5f31",
+      "categoryId": 1,
+      "name": "Netflix",
+      "provider": "Netflix",
+      "cost": 12.99,
+      "currency": "EUR",
+      "interval": "MONTHLY",
+      "startDate": "2026-05-01",
+      "cancelDeadline": "2026-06-20",
+      "contractEnd": null,
+      "autoRenewal": true,
+      "usageRating": "OFTEN",
+      "isPaused": false
+    }
+  ],
+  "notifications": [],
+  "importCandidates": [],
+  "budgetTarget": 80
+}
+----
+
+== Hinweise für die spätere Backend-Umsetzung
+
+Für die spätere Umsetzung in `backend/src/routes/dashboard.ts` sollten folgende Punkte beachtet werden:
+
+* Der Endpoint sollte `GET /api/dashboard` heißen.
+* Die Daten sollten im Backend aus Supabase/PostgreSQL gelesen werden.
+* SQL-Felder werden im Backend auf camelCase gemappt.
+* Für nutzerbezogene Daten muss nach `user_id` gefiltert werden.
+* Datumswerte sollten im Format `YYYY-MM-DD` an das Frontend zurückgegeben werden.
+* `numeric`-Werte aus PostgreSQL sollten als JavaScript-Number zurückgegeben werden.
+* Fehlende optionale Werte sollten als `null` und nicht als `undefined` zurückgegeben werden.
+* Das Frontend soll keine Service-Role-Keys oder Datenbank-Secrets enthalten.
+
+== Bezug zu bestehenden Dokumenten
+
+Dieses Mapping orientiert sich an:
+
+* `docs/technical/design.adoc`
+* `docs/technical/architecture.adoc`
+* `docs/technical/walking-skeleton-guide.adoc`
+* `SubGuard-Prototyp/docs/frontend-backend-contract.md`
+
+Damit soll sichergestellt werden, dass Backend, Datenbank und Frontend dieselben fachlichen Begriffe und Datenstrukturen verwenden.

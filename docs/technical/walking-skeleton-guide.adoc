@@ -114,7 +114,7 @@ router.get('/dashboard', requireAuth, async (req: AuthenticatedRequest, res: Res
         const categoriesResult = await pool.query('SELECT id, name, icon, color FROM public.categories');
         
         const subsQuery = `
-            SELECT id, category_id, name, provider, cost, currency, payment_interval, 
+            SELECT id, category_id, name, provider, cost, currency, interval, 
                    start_date, cancel_deadline, contract_end, auto_renewal, usage_rating, is_paused 
             FROM public.subscriptions 
             WHERE user_id = $1
@@ -129,7 +129,7 @@ router.get('/dashboard', requireAuth, async (req: AuthenticatedRequest, res: Res
             provider: row.provider,
             cost: parseFloat(row.cost),
             currency: row.currency,
-            interval: row.payment_interval,
+            interval: row.interval,
             startDate: row.start_date.toISOString().split('T')[0],
             cancelDeadline: row.cancel_deadline ? row.cancel_deadline.toISOString().split('T')[0] : null,
             contractEnd: row.contract_end ? row.contract_end.toISOString().split('T')[0] : null,

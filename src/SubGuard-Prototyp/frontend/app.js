@@ -1,4 +1,3 @@
-///
 const MOCK_DASHBOARD = {
   budgetTarget: 80,
   categories: [
@@ -188,22 +187,6 @@ function buildSubscriptionPayload(values) {
   };
 }
 
-// ✅ NEU: Toast-Nachricht anzeigen
-function showToast(message) {
-  const toast = document.createElement('div');
-  toast.textContent = message;
-  toast.style.cssText = `
-    position:fixed; bottom:60px; left:50%; transform:translateX(-50%);
-    z-index:9999; background:#10b981; color:white;
-    padding:12px 24px; border-radius:12px; font-size:14px;
-    font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.3);
-    transition:opacity 0.4s; white-space:nowrap;
-  `;
-  document.body.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; }, 2500);
-  setTimeout(() => toast.remove(), 3000);
-}
-
 async function handleSubscriptionSubmit(event) {
   event.preventDefault();
 
@@ -230,11 +213,6 @@ async function handleSubscriptionSubmit(event) {
     renderBudget();
     renderSubs();
     renderAnalysis();
-
-    // ✅ NEU: Toast anzeigen und zur Abo-Liste scrollen
-    showToast('✓ Abo erfolgreich gespeichert!');
-    document.getElementById('subs-grid').scrollIntoView({ behavior: 'smooth' });
-
   } catch (error) {
     saveFailed = true;
     console.error('Subscription could not be saved.', error);

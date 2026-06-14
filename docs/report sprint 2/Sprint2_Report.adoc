@@ -1,0 +1,125 @@
+= Sprint-2-Report: Technischer Ansatz und agile Arbeitsweise
+
+Team:: SubscriptionGuard-Team E2
+Projektname:: SubscriptionGuard 
+Datum:: 28.05.2026
+Repository-Link:: [https://github.com/momel13/SubscriptionGuard-E2.git]
+====
+Dieser Report soll auf maximal einer Seite zeigen, wie Ihr Team in Sprint 2 gearbeitet hat,
+welche Praktiken Sie angewendet haben, welche technischen Artefakte entstanden sind und was Sie daraus gelernt haben.
+
+== 1. Sprintziel und zentrale Fragestellung
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Sprintziel
+| Etablierung einer stabilen, cloud-basierten Dateninfrastruktur und lauffähiger Nachweis (Walking Skeleton), dass das React-Frontend über unser Express-Backend erfolgreich mit einer echten PostgreSQL-Datenbank kommunizieren kann.
+
+| Zentrale technische Unsicherheit / Annahme
+| Reicht eine lokale SQLite-Datenbank aus, um zuverlässige Kündigungserinnerungen über Hintergrund-Jobs und Datensynchronisation über mehrere Endgeräte (Web/Mobile) zu gewährleisten, oder benötigen wir zwingend eine Cloud-Infrastruktur?
+|===
+
+== 2. Erwartete Praktiken in Sprint 2
+
+[cols="1,2,2,2", options="header"]
+|===
+| Praktik
+| Konkrete Anwendung in unserem Sprint
+| Nachweis / Artefakt (Link einfügen)
+| Nutzen, Erkenntnis oder Anpassung
+
+| ADRs für wichtige technische Entscheidungen schreiben
+| Evaluation der Produktionsdatenbank und Entscheidung gegen SQLite und für Supabase (PostgreSQL).
+| link:docs/technical/ADRs/009-supabase-produktionsdatenbank.adoc[ADR-009: Supabase Produktionsdatenbank]
+| Verbindliche Begründung für die Cloud-Datenbank zur Sicherstellung von Kündigungs-Cron-Jobs und Cross-Platform-Verfügbarkeit.
+
+| Systemgrenzen & C4-Diagramme erstellen
+| Modellierung der Systemarchitektur im C4-Kontext- und Containerdiagramm.
+| link:docs/technical/architecture.adoc[architecture.adoc]
+| Klare Architektur-Trennung zwischen Frontend, Backend (Express), Supabase Auth/DB und externen Push-Diensten geschaffen.
+
+| Partielles logisches Datenmodell erarbeiten & anpassen
+| Abgleich des ERDs mit der Live-Datenbank (UUIDs integrieren, Spalten wie interval und email angleichen).
+| link:docs/technical/design.adoc[design.adoc]
+| "Single Source of Truth" hergestellt. Diskrepanzen beseitigt, die spätere Backend-Fehler verursacht hätten.
+
+| Walking Skeleton aufbauen
+| Erstellung von Backend-Routen mit echter DB-Anbindung (pg-Treiber) und strukturiertem Mapping von snake_case auf camelCase.
+| link:docs/technical/walking-skeleton-guide.adoc[walking-skeleton-guide.adoc] +
+link:docs/technical/api_mapping.adoc[api_mapping.adoc]
+| Beweis, dass Frontend und Backend über den definierten API-Vertrag reibungslos mit der Cloud-Datenbank interagieren können.
+|===
+
+== 3. Wichtigste technische Lernergebnisse aus Sprint 2
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Erkenntnis 1
+| SQLite reicht für unsere Qualitätsziele nicht aus: Kündigungserinnerungen müssen eine Fehlerrate von 0 % haben. Mobile Betriebssysteme beenden lokale Hintergrundprozesse zu oft. Eine dauerhaft erreichbare Cloud-Datenbank (Supabase) in Kombination mit einem serverseitigen Cron-Job ist zwingend nötig.
+
+| Erkenntnis 2
+| Supabase Auth erzwingt UUIDs: Wir haben gelernt, dass eine direkte Verknüpfung unserer Nutzer-Tabelle mit dem Supabase-Authentifizierungssystem voraussetzt, dass die IDs als UUID und nicht als fortlaufende Zahl (SERIAL) modelliert sind. Dies erforderte Anpassungen im Code und Schema.
+
+| Erkenntnis 3
+| Sicherheit (RLS) als Grundvoraussetzung: Eine Warnung von Supabase bzgl. "publicly accessible tables" hat uns gezeigt, dass wir trotz Backend-Fokus auf Datenbankebene Row-Level Security (RLS) aktivieren müssen, um DSGVO-Konformität auch bei der Infrastruktur sicherzustellen.
+|===
+
+== 4. Änderungen am technischen Ansatz
+
+[cols="2,2,2", options="header"]
+|===
+| Ursprüngliche Annahme / Option
+| Neue Erkenntnis oder Evidenz
+| Anpassung am technischen Ansatz, an der Architektur oder am Backlog
+
+| Nutzung einer lokalen SQLite-Datenbank für die produktive App.
+| Cross-Device-Sync und verlässliche Hintergrund-Jobs funktionieren mobil nicht rein lokal.
+| Migration zu Supabase (PostgreSQL) im Free Tier als zentrale Cloud-Lösung (dokumentiert in ADR-009).
+
+| ID in der users-Tabelle als Integer/Zahl (SERIAL) implementiert.
+| Die native Anbindung an Supabase Auth (Sicherheitsanforderung) erfordert zwingend UUIDs.
+| Datentyp in Live-Datenbank, design.adoc und TypeScript-Interfaces auf UUID bzw. string geändert.
+
+| Komplexe Budget-Verwaltung über eine separate Datenbanktabelle.
+| Macht das MVP unnötig komplex und verlangsamt die Lesezugriffe im Dashboard.
+| Vereinfachung des Modells: Das Budget liegt nun als simples Attribut monthly_budget direkt im Profil (users).
+|===
+
+== 5. Architekturtreiber, Entscheidungen und technische Evidenz
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Wichtigste Architekturtreiber
+| Datenschutz/DSGVO (Zwang zum EU-Hosting für Finanzdaten), Portabilität (Web & Mobile Synchronisation) und Zuverlässigkeit (garantierte Fristenprüfung).
+
+| Wichtigste Entscheidungen / ADRs
+| ADR-009: Supabase als Produktionsdatenbank. ADR-005: Auslagerung rechenintensiver Fachlogik (CSV-Parsing & Cron-Jobs) in ein starkes Node.js-Backend.
+
+| Technische Evidenz
+| Das laufende Supabase-Projekt in der Region eu-central-1 mit aktivierten RLS-Policies, sowie die erfolgreichen SQL-Lesezugriffe via pg-Treiber im Walking Skeleton. Eine anstehende Supabase-Einschränkung der "Data API" umgehen wir sicher durch direkte SQL-Backend-Zugriffe.
+
+| Verbleibende Risiken / offene Fragen
+| Performance-Tests beim serverseitigen CSV-Parsing extrem langer Kontoauszüge stehen noch aus.
+|===
+
+== 6. Anpassung der Arbeitsweise für Sprint 3
+
+[cols="1,3", options="header"]
+|===
+| Kriterium | Ihre Antwort
+
+| Beibehalten
+| Den Review-Prozess bei Pull Requests sowie die strenge Nachführung der Dokumentation (design.adoc), sobald sich die Struktur der Live-Datenbank ändert.
+
+| Ändern / verbessern
+| Verbessertes Tracking im GitHub Project Board: Wir haben dedizierte Board-Sichten für "Product Backlog", "Sprint Planning" und "Current Sprint" (nach Iterationen gefiltert) eingeführt, um den Überblick im Daily zu verbessern.
+
+| Kandidat für Sprint 3
+| Ein voll funktionsfähiges MVP-Dashboard, das Lese- und Schreibzugriffe (CRUD) für Abonnements über die REST-Schnittstelle (/api/subscriptions) gegen die Cloud-Datenbank ausführt.
+|===

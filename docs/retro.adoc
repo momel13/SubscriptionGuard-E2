@@ -1,0 +1,30 @@
+= Protokoll: Retrospektive Sprint [2] – Team E2 (SubscriptionGuard)
+Kevin Fiek
+[08.06.2026]
+
+*Teilnehmer:* Moritz Melzer, Kevin Fiek, Michele Leon Locke, Huy Hiep Nguyen, Joud Khatib, Fatemeh Pak Cheshm, Mohsen Hosseinzadehyousefi, Aaron Werner
+*Fokus:* Analyse der Teamzusammenarbeit
+
+== 1. Was lief gut? 🟢
+_Dinge, die wir als Team beibehalten wollen._
+
+* Lösungen der Aufgaben qualitativ gut
+
+== 2. Was müssen wir verbessern? 🔴
+_Probleme, Blockaden oder Prozesse, die uns ausgebremst haben (auf der Sachebene)._
+
+* Aufgabenzuweisung, ungerechte Verteilung der Aufgaben
+* kein Feedback innerhalb von 24h
+* Probleme nicht zuerst innerhalb des Teams geklärt
+* Fehlende Kommunikation bei Problemen
+
+== 3. Beschlossene Action Items 🎯
+_Konkrete, verbindliche Maßnahmen für den nächsten Sprint. Wer macht was bis wann?_
+
+* *Action Item 1 (Wöchentliches Meeting):* Wir treffen uns jede Woche zu einem Meeting -> (mittwochs 14:15 max 60min) Verantwortlich: Alle -> Ziel: Probleme frühzeitig erkennen und klären ((in der regel online, bemühungen für offline treffen))
+
+* *Action Item 2 (Feedback-Kultur):* Wir geben uns gegenseitig Feedback innerhalb von 24h -> Verantwortlich: Alle -> Ziel: Schnelle Problemlösung und Verbesserung der Zusammenarbeit
+
+
+* *Action Item 3 (Optionaler Dev-Sync):* Einrichtung eines freiwilligen Q&A- und Support-Slots am Dienstag um 13:00 Uhr in Discord für technische Fragen und Code-Reviews. -> Verantwortlich: Alle (Freiwillig)
+

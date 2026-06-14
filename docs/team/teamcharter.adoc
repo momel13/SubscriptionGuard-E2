@@ -1,5 +1,5 @@
-= Teamcharta: SubscriptionGuard
-Vorname Nachname <email@domain.org>; Vorname2 Nachname2 <email2@domain.org>; Vorname3 Nachname3 <email3@domain.org>
+= Teamcharta: {project-name}
+Kevin Fiek <kevin.fiek@stud.htw-dresden.de>; HuyHiep Nguyen <huyhiep.nguyen@stud.htw-dresden.de>; Vorname3 Nachname3 <email3@domain.org>;
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
 :version: 1.0
@@ -37,30 +37,32 @@ SubscriptionGuard soll es ermöglichen Abonnements und laufenden Verträge einfa
 |===
 | Ereignis | Wann | Dauer | Moderation
 
-| Standup (Daily / Weekly)
-| täglich 09:30
-| 15 min
-| Product Owner/ Scrum Master
 
 | Sprint Planning
-| montags, Sprintstart
-| 2 h
+| Sprintstart
+| 1 h
 | Scrum Master
 
 | Sprint Review
-| freitags, Sprintende
+| Sprintende
 | 1 h
 | Product Owner
 
 | Retrospektive
-| freitags, nach Review
+| nach Review
 | 1 h
+| Scrum Master, Product Owner
+
+| Weekly Standup
+| Mittwoch 14:15
+| max 1 h
 | Scrum Master
 
-| Backlog Refinement
-| mittwochs, wöchentlich
-| 1 h
-| Product Owner
+| Optionaler Dev-Sync
+| Dienstag 13:00
+| 30 min
+| Tech Lead
+
 |===
 
 == Kommunikation
@@ -73,7 +75,7 @@ SubscriptionGuard soll es ermöglichen Abonnements und laufenden Verträge einfa
 | Discord
 
 | Entscheidungsprotokoll
-|
+| ADRs auf Github
 
 | Erwartete Reaktionszeit
 | Innerhalb von 24 Stunden an Werktagen
@@ -125,7 +127,7 @@ _Eine User Story gilt als fertig, wenn:_
 | jedes Teammitglied
 
 | Commit-Konventionen
-| [z. B. Conventional Commits]
+| Conventional Commits
 |===
 
 == Teamvereinbarungen
