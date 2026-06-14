@@ -256,7 +256,8 @@ async function handleSubscriptionSubmit(event) {
       elements.alert.textContent = '';
       elements.alert.classList.remove('visible');
     }
-    showToast(dataSource === MockDataSource ? '✓ Abo lokal im Mock-Fallback gespeichert!' : '✓ Abo erfolgreich gespeichert!');
+    const savedLocally = dataSource === MockDataSource || typeof dataSource.createSubscription !== 'function';
+    showToast(savedLocally ? '✓ Abo lokal im Mock-Fallback gespeichert!' : '✓ Abo erfolgreich gespeichert!');
     document.getElementById('subs-grid').scrollIntoView({ behavior: 'smooth' });
 
   } catch (error) {
