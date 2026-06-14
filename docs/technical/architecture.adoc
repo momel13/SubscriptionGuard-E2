@@ -1,5 +1,5 @@
 = Architekturdokument: {project-name}
-Kevin Fiek <kevin.fiek@stud.htw-dresden.de>;HuyHiep Nguyen <huyhiep_nguyen@stud.htw-dresden.de>;Vorname3 Nachname3 <email3@domain.org>;
+Kevin Fiek <kevin.fiek@stud.htw-dresden.de>;HuyHiep Nguyen <huyhiep_nguyen@stud.htw-dresden.de>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
 
@@ -131,7 +131,7 @@ _Die physischen Knoten und das Deployment der Docker-Container / Cloud-Dienste s
 
 | UI-Komponenten
 | Mantine
-| Beschhebenigt Formulare, Dialoge, Tabellen und Accessibility.
+| Beschleunigt Formulare, Dialoge, Tabellen und Accessibility.
 | ADR-006
 
 | Diagramme
@@ -277,6 +277,18 @@ IMPORTANT: Qualitätsziele und Einschränkungen werden hier *nicht* neu definier
 | *Entscheidung* | Wir verzichten auf jegliches Drittanbieter-Tracking. Fachliche Finanzdaten werden nur als kurzlebiger State (React) gehalten und CSV-Rohdaten nach dem Parsing im Backend sofort verworfen.
 | *Alternativen* | Lokale Speicherung von CSV-Dateien im `localStorage` für späteren Abgleich (verworfen wegen Sicherheitsbedenken).
 | *Konsequenzen* | Das Datenschutzrisiko wird drastisch minimiert. Die reine Offline-Fähigkeit der App ist dadurch jedoch bewusst limitiert.
+|===
+
+=== ADR-009: Detail-Evaluierung der Produktionsdatenbank (Supabase vs. SQLite)
+[cols="1,3"]
+|===
+| *Status* | Akzeptiert
+| *Datum* | 24.05.2026
+| *Kontext* | Im Rahmen der Konzeption standen sich der datenschutzfreundliche Schutz persönlicher Finanzdaten und die Anforderungen an plattformübergreifende Datenkonsistenz sowie 0% Fehlerrate bei Kündigungserinnerungen gegenüber. Ein reiner SQLite-Ansatz blockiert diese qualitativen Systemziele: (1) SQLite als lokale, dateibasierte Datenbank verhindert den automatisierten Cross-Platform-Sync zwischen Geräten. (2) Hintergrundprozesse inaktiver mobiler Apps schränken lokale Timer stark ein; ein verlässlicher, täglicher Fristen-Check um 06:00 Uhr erfordert eine erreichbare Netzwerkdatenbank und einen permanent laufenden Cloud-Server. (3) Das rechenintensive, serverseitige CSV-Parsing im Express-Backend benötigt schreibenden und lesenden Zugriff auf ein zentrales System. (4) Unterschiedliche Datentypen und SQL-Dialekte erhöhen bei komplexen mathematischen Aggregationsabfragen (Kostenanalyse) die technischen Schulden.
+| *Entscheidung* | Wir bestätigen nachdrücklich die Entscheidung aus ADR-002 und bestreiten den produktiven Betrieb (Production) vollumfänglich mit Supabase (Cloud-PostgreSQL). Das Projekt wird datenschutzkonform in der EU-Region (`eu-central-1` in Frankfurt) angelegt inklusive Abschluss eines AVV. Zur Einhaltung des Budgets wird das dauerhaft kostenlose Tarifmodell (Free Tier) genutzt. SQLite bleibt als temporärer Kompromiss ausschließlich auf die lokale Entwicklung beschränkt.
+| *Alternativen* | 1. Durchgängige Nutzung von SQLite in Produktion (verworfen, da plattformübergreifender Sync und verlässliche Hintergrund-Jobs funktional unmöglich sind). +
+2. Selbst gehostetes PostgreSQL (verworfen wegen unverhältnismäßig hohem Setup-, Hosting- und Betriebsaufwand im vorgegebenen Zeitrahmen).
+| *Konsequenzen* | Web-Frontend und mobile Clients greifen über eine einheitliche REST/JSON-Schnittstelle auf denselben synchronisierten Datenbestand zu. Der tägliche `deadlineCheck`-Job läuft absolut verlässlich im permanent aktiven Node.js-Backend. Die DSGVO-Vorgaben werden durch den EU-Standort erfüllt. Die Ressourcen des Free Tiers (500 MB DB-Speicher für Hunderttausende Zeilen, 1 GB Storage für den temporären CSV-Import und integriertes Supabase Auth für bis zu 50.000 aktive Nutzer) beschleunigen die MVP-Entwicklung drastisch. Die automatische Inaktivitäts-Pausierung nach einer Woche wird akzeptiert, da sie im Dashboard ohne Datenverlust per Klick aufgehoben werden kann.
 |===
 
 == Risiken & technische Schulden
