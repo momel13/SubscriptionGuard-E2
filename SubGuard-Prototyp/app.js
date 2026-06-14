@@ -1,4 +1,4 @@
-//
+///
 const MOCK_DASHBOARD = {
   budgetTarget: 80,
   categories: [
