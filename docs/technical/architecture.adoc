@@ -162,7 +162,7 @@ _Die physischen Knoten und das Deployment der Docker-Container / Cloud-Dienste s
 
 == Architekturrelevante Anforderungen
 
-IMPORTANT: Qualitätsziele und Einschränkungen werden hier *nicht* neu definiert — sie sind im `product_concept.adoc` als einziger Quelle festgelegt. Dieser Abschnitt zeigt ausschließlich die technischen Konsequenzen, die sich aus diesen Anforderungen ergeben.
+IMPORTANT: Qualitätsziele und Einschränkungen werden hier *not* neu definiert — sie sind im `product_concept.adoc` als einziger Quelle festgelegt. Dieser Abschnitt zeigt ausschließlich die technischen Konsequenzen, die sich aus diesen Anforderungen ergeben.
 
 [cols="2,3,2", options="header"]
 |===
