@@ -678,12 +678,12 @@
 
 <div class="demo-bar" id="data-source-label">Klickbarer Prototyp — Mock-Daten</div>
 <script>
+  const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-token-subscriptionguard-2026';
+
   window.SubGuardDataSource = {
     name: 'Live Express Backend (Authenticated)',
+
     async loadDashboard() {
-      
-      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-token-subscriptionguard-2026';
-      
       const response = await fetch('http://localhost:5001/api/dashboard', {
         method: 'GET',
         headers: {
@@ -697,6 +697,25 @@
       }
 
       return response.json();
+    },
+
+    async createSubscription(payload) {
+      const response = await fetch('http://localhost:5001/api/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${testToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `API-Request für neues Abo fehlgeschlagen! Status: ${response.status}`);
+      }
+
+      return result.subscription || result.receivedData || payload;
     }
   };
 </script><script src="app.js"></script>
