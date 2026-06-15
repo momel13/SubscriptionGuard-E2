@@ -37,11 +37,14 @@ const MockDataSource = {
   async loadDashboard() {
     return MOCK_DASHBOARD;
   },
+  async createSubscription(payload) {
+    return { ...payload, id: Date.now() };
+  },
 };
 
 // Backend handoff point:
 // window.SubGuardDataSource = { name: 'REST API', loadDashboard: async () => fetch('/api/dashboard').then(r => r.json()) };
-const dataSource = window.SubGuardDataSource || MockDataSource;
+let dataSource = window.SubGuardDataSource || MockDataSource;
 
 const INTERVAL_FACTOR = { WEEKLY: 52 / 12, MONTHLY: 1, QUARTERLY: 1 / 3, YEARLY: 1 / 12 };
 const fmt = (n) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n || 0);
@@ -204,6 +207,18 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 3000);
 }
 
+function getSubscriptionSaveErrorMessage(error) {
+  const message = error?.message || '';
+
+  if (/failed to fetch|networkerror|load failed|fetch/i.test(message)) {
+    return 'Das Backend ist nicht erreichbar. Bitte pruefe die API-Verbindung.';
+  }
+
+  return message
+    ? `Das Abo konnte nicht gespeichert werden: ${message}`
+    : 'Das Abo konnte nicht gespeichert werden. Bitte pruefe die API-Verbindung.';
+}
+
 async function handleSubscriptionSubmit(event) {
   event.preventDefault();
 
@@ -214,6 +229,7 @@ async function handleSubscriptionSubmit(event) {
   const payload = buildSubscriptionPayload(values);
   const submitLabel = elements.submit?.textContent || 'Speichern';
   let saveFailed = false;
+  let saveErrorMessage = '';
 
   try {
     if (elements.submit) {
@@ -232,21 +248,26 @@ async function handleSubscriptionSubmit(event) {
     renderAnalysis();
 
     // ✅ NEU: Toast anzeigen und zur Abo-Liste scrollen
-    showToast('✓ Abo erfolgreich gespeichert!');
+    if (elements.alert) {
+      elements.alert.textContent = '';
+      elements.alert.classList.remove('visible');
+    }
+    showToast(dataSource === MockDataSource ? '✓ Abo lokal im Mock-Fallback gespeichert!' : '✓ Abo erfolgreich gespeichert!');
     document.getElementById('subs-grid').scrollIntoView({ behavior: 'smooth' });
 
   } catch (error) {
     saveFailed = true;
+    saveErrorMessage = getSubscriptionSaveErrorMessage(error);
     console.error('Subscription could not be saved.', error);
     if (elements.alert) {
-      elements.alert.textContent = 'Das Abo konnte nicht gespeichert werden. Bitte versuche es erneut.';
+      elements.alert.textContent = saveErrorMessage;
       elements.alert.classList.add('visible');
     }
   } finally {
     if (elements.submit) elements.submit.textContent = submitLabel;
     const currentValidation = validateSubscriptionForm(false);
     if (saveFailed && currentValidation.valid && elements.alert) {
-      elements.alert.textContent = 'Das Abo konnte nicht gespeichert werden. Bitte versuche es erneut.';
+      elements.alert.textContent = saveErrorMessage;
       elements.alert.classList.add('visible');
     }
   }
@@ -627,8 +648,9 @@ async function init() {
     document.getElementById('data-source-label').textContent = `Klickbarer Prototyp — ${dataSource.name}`;
   } catch (error) {
     console.error('Dashboard data source failed. Falling back to mock data.', error);
-    renderApp(await MockDataSource.loadDashboard());
-    document.getElementById('data-source-label').textContent = 'Klickbarer Prototyp — Mock-Fallback';
+    dataSource = MockDataSource;
+    renderApp(await dataSource.loadDashboard());
+    document.getElementById('data-source-label').textContent = 'Klickbarer Prototyp — Mock-Fallback (Speichern lokal simuliert)';
   }
 }
 

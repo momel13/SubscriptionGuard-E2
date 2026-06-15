@@ -10,7 +10,26 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase');
 }
 
+const clientOptions = {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+};
+
 export const supabase = createClient(
   supabaseUrl,
-  supabaseKey
+  supabaseKey,
+  clientOptions
 );
+
+export function createSupabaseForAccessToken(accessToken: string) {
+  return createClient(supabaseUrl!, supabaseKey!, {
+    ...clientOptions,
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}

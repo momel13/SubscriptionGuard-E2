@@ -678,44 +678,80 @@
 
 <div class="demo-bar" id="data-source-label">Klickbarer Prototyp — Mock-Daten</div>
 <script>
-  const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo-token-subscriptionguard-2026';
+  const API_BASE_URL = window.SubGuardApiBaseUrl || 'http://localhost:5001';
+  let cachedAccessToken = null;
+
+  async function readJson(response) {
+    return response.json().catch(() => ({}));
+  }
+
+  function getApiError(result, fallback) {
+    if (Array.isArray(result.errors) && result.errors.length) {
+      return result.errors.join(' ');
+    }
+
+    return result.message || result.error || fallback;
+  }
+
+  async function getAccessToken() {
+    if (cachedAccessToken) return cachedAccessToken;
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/demo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+    const result = await readJson(response);
+
+    if (!response.ok || !result.accessToken) {
+      throw new Error(getApiError(result, `Demo-Login fehlgeschlagen! Status: ${response.status}`));
+    }
+
+    cachedAccessToken = result.accessToken;
+    return cachedAccessToken;
+  }
 
   window.SubGuardDataSource = {
     name: 'Live Express Backend (Authenticated)',
 
     async loadDashboard() {
-      const response = await fetch('http://localhost:5001/api/dashboard', {
+      const accessToken = await getAccessToken();
+      const response = await fetch(`${API_BASE_URL}/api/dashboard`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${testToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
+      const result = await readJson(response);
 
       if (!response.ok) {
-        throw new Error(`API-Request für Dashboard fehlgeschlagen! Status: ${response.status}`);
+        throw new Error(getApiError(result, `API-Request fuer Dashboard fehlgeschlagen! Status: ${response.status}`));
       }
 
-      return response.json();
+      return result;
     },
 
     async createSubscription(payload) {
-      const response = await fetch('http://localhost:5001/api/subscriptions', {
+      const accessToken = await getAccessToken();
+      const response = await fetch(`${API_BASE_URL}/api/subscriptions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${testToken}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify(payload)
       });
 
-      const result = await response.json();
+      const result = await readJson(response);
 
       if (!response.ok) {
-        throw new Error(result.message || `API-Request für neues Abo fehlgeschlagen! Status: ${response.status}`);
+        throw new Error(getApiError(result, `API-Request fuer neues Abo fehlgeschlagen! Status: ${response.status}`));
       }
 
-      return result.subscription || result.receivedData || payload;
+      return result.subscription || payload;
     }
   };
 </script><script src="app.js"></script>

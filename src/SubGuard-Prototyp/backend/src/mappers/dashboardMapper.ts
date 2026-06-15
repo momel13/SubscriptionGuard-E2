@@ -7,12 +7,14 @@ type CategoryRow = {
 
 type SubscriptionRow = {
   id: number;
+  user_id?: string;
   category_id: number;
   name: string;
   provider: string;
   cost: string | number;
   currency: 'EUR' | 'USD' | 'CHF';
-  payment_interval: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  payment_interval?: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  interval?: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
   start_date: string | Date;
   cancel_deadline: string | Date | null;
   contract_end: string | Date | null;
@@ -51,12 +53,13 @@ export function mapCategory(row: CategoryRow) {
 export function mapSubscription(row: SubscriptionRow) {
   return {
     id: row.id,
+    userId: row.user_id,
     categoryId: row.category_id,
     name: row.name,
     provider: row.provider,
     cost: Number(row.cost),
     currency: row.currency,
-    interval: row.payment_interval,
+    interval: row.payment_interval ?? row.interval,
     startDate: formatDate(row.start_date),
     cancelDeadline: formatDate(row.cancel_deadline),
     contractEnd: formatDate(row.contract_end),
