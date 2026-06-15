@@ -74,7 +74,7 @@ app.post('/api/subscriptions', async (req, res): Promise<any> => {
       provider: subscriptionPayload.provider,
       cost: subscriptionPayload.cost,
       currency: subscriptionPayload.currency,
-      payment_interval: subscriptionPayload.interval,
+      interval: subscriptionPayload.interval,
       start_date: subscriptionPayload.startDate,
       cancel_deadline: subscriptionPayload.cancelDeadline ?? null,
       contract_end: subscriptionPayload.contractEnd ?? null,
