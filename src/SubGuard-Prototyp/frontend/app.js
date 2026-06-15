@@ -211,12 +211,16 @@ function getSubscriptionSaveErrorMessage(error) {
   const message = error?.message || '';
 
   if (/failed to fetch|networkerror|load failed|fetch/i.test(message)) {
-    return 'Das Backend ist nicht erreichbar. Bitte pruefe die API-Verbindung.';
+    return 'Das Backend ist nicht erreichbar. Bitte prüfe die API-Verbindung oder nutze den Mock-Fallback.';
+  }
+
+  if (/status:\s*(404|500|502|503|504)/i.test(message)) {
+    return `Das Backend hat das Speichern abgelehnt (${message}). Bitte API-Endpunkt und Serverstatus prüfen.`;
   }
 
   return message
     ? `Das Abo konnte nicht gespeichert werden: ${message}`
-    : 'Das Abo konnte nicht gespeichert werden. Bitte pruefe die API-Verbindung.';
+    : 'Das Abo konnte nicht gespeichert werden. Bitte prüfe die API-Verbindung.';
 }
 
 async function handleSubscriptionSubmit(event) {
@@ -252,7 +256,8 @@ async function handleSubscriptionSubmit(event) {
       elements.alert.textContent = '';
       elements.alert.classList.remove('visible');
     }
-    showToast(dataSource === MockDataSource ? '✓ Abo lokal im Mock-Fallback gespeichert!' : '✓ Abo erfolgreich gespeichert!');
+    const savedLocally = dataSource === MockDataSource || typeof dataSource.createSubscription !== 'function';
+    showToast(savedLocally ? '✓ Abo lokal im Mock-Fallback gespeichert!' : '✓ Abo erfolgreich gespeichert!');
     document.getElementById('subs-grid').scrollIntoView({ behavior: 'smooth' });
 
   } catch (error) {

@@ -751,7 +751,7 @@
         throw new Error(getApiError(result, `API-Request fuer neues Abo fehlgeschlagen! Status: ${response.status}`));
       }
 
-      return result.subscription || payload;
+      return result.subscription || result.receivedData || payload;
     }
   };
 </script><script src="app.js"></script>
