@@ -33,3 +33,5 @@ export function createSupabaseForAccessToken(accessToken: string) {
     },
   });
 }
+
+export type SupabaseRequestClient = ReturnType<typeof createSupabaseForAccessToken>;

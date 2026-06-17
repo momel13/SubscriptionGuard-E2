@@ -1,4 +1,4 @@
-import type { createSupabaseForAccessToken } from './supabase.js';
+import type { SupabaseRequestClient } from './supabase.js';
 
 export const DEFAULT_CATEGORIES = [
   { id: 1, name: 'Streaming', icon: '🎬', color: '#a855f7' },
@@ -10,9 +10,7 @@ export const DEFAULT_CATEGORIES = [
   { id: 7, name: 'News', icon: '📰', color: '#f59e0b' },
 ];
 
-type SupabaseDb = ReturnType<typeof createSupabaseForAccessToken>;
-
-export async function ensureDefaultCategories(db: SupabaseDb) {
+export async function ensureDefaultCategories(db: SupabaseRequestClient) {
   const current = await db
     .from('categories')
     .select('*')
