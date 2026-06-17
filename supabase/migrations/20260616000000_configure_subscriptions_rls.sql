@@ -12,16 +12,19 @@ begin
   end if;
 end $$;
 
+create index if not exists subscriptions_user_id_idx
+on public.subscriptions (user_id);
+
 drop policy if exists "subscriptions_select_own_rows" on public.subscriptions;
 create policy "subscriptions_select_own_rows"
 on public.subscriptions
 for select
 to authenticated
-using (user_id = auth.uid());
+using (user_id = (select auth.uid()));
 
 drop policy if exists "subscriptions_insert_own_rows" on public.subscriptions;
 create policy "subscriptions_insert_own_rows"
 on public.subscriptions
 for insert
 to authenticated
-with check (user_id = auth.uid());
+with check (user_id = (select auth.uid()));
