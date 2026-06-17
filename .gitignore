@@ -4,3 +4,11 @@
 .DS_Store
 *~
 .vscode
+node_modules/
+.env
+.env.local
+
+# Prototype local runtime files
+src/SubGuard-Prototyp/backend/.env
+src/SubGuard-Prototyp/backend/.env.local
+src/SubGuard-Prototyp/backend/node_modules/

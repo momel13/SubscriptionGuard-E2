@@ -680,6 +680,8 @@
 <script>
   const API_BASE_URL = window.SubGuardApiBaseUrl || 'http://localhost:5001';
   let cachedAccessToken = null;
+  let backendAuthMode = 'Live Express Backend (Supabase)';
+  let backendDemoModeActive = false;
 
   async function readJson(response) {
     return response.json().catch(() => ({}));
@@ -710,11 +712,22 @@
     }
 
     cachedAccessToken = result.accessToken;
+    backendDemoModeActive = Boolean(result.warning);
+    backendAuthMode = backendDemoModeActive
+      ? 'Live Express Backend (lokaler Demo-Modus)'
+      : 'Live Express Backend (Supabase)';
+
     return cachedAccessToken;
   }
 
   window.SubGuardDataSource = {
-    name: 'Live Express Backend (Authenticated)',
+    get name() {
+      return backendAuthMode;
+    },
+
+    isLocalDemoMode() {
+      return backendDemoModeActive;
+    },
 
     async loadDashboard() {
       const accessToken = await getAccessToken();
@@ -749,6 +762,11 @@
 
       if (!response.ok) {
         throw new Error(getApiError(result, `API-Request fuer neues Abo fehlgeschlagen! Status: ${response.status}`));
+      }
+
+      backendDemoModeActive = /lokalen Backend-Demo-Modus/i.test(result.message || '');
+      if (backendDemoModeActive) {
+        backendAuthMode = 'Live Express Backend (lokaler Demo-Modus)';
       }
 
       return result.subscription || result.receivedData || payload;
