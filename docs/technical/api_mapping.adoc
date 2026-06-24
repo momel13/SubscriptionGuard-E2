@@ -27,6 +27,10 @@ Dabei gilt:
 * Das Frontend arbeitet nur mit fachlichen API-Daten.
 * Supabase-Tabellen sollen nicht direkt vom Frontend für fachliche Daten gelesen werden.
 * Secrets oder Service-Role-Keys dürfen niemals im Frontend verwendet werden.
+* Geschützte Backend-Routen erhalten den Supabase Access Token über den
+  HTTP-Header `Authorization: Bearer <access_token>`.
+* Das Backend verwendet für echte Supabase-Requests einen request-spezifischen
+  Supabase-Client, damit RLS mit dem aktuellen Nutzerkontext greift.
 
 == Erwartetes Dashboard-Payload
 
@@ -167,6 +171,110 @@ Beispiel:
 }
 ----
 
+=== Request-Mapping: `POST /api/subscriptions`
+
+Der aktuelle Prototyp verwendet diesen Endpoint, um ein neues Abo aus dem
+Frontend-Formular heraus anzulegen. Das Frontend sendet die fachlichen Felder im
+JSON-Body und den Supabase Access Token im Authorization-Header.
+
+[cols="1,1,2", options="header"]
+|===
+| Request-Feld | Datenbankfeld | Bemerkung
+
+| `categoryId`
+| `category_id`
+| Pflichtfeld. Muss auf eine vorhandene Kategorie verweisen.
+
+| `name`
+| `name`
+| Pflichtfeld. Name des Abos, z. B. "Gym" oder "Netflix".
+
+| `provider`
+| `provider`
+| Optionaler Anbietername.
+
+| `cost`
+| `cost`
+| Pflichtfeld. Wird serverseitig als Zahl validiert.
+
+| `currency`
+| `currency`
+| Standard im Prototyp: `EUR`.
+
+| `interval`
+| `interval`
+| Erwartet `WEEKLY`, `MONTHLY`, `QUARTERLY` oder `YEARLY`. Aus Kompatibilitätsgründen akzeptiert das Backend auch `payment_interval` als Fallback.
+
+| `startDate`
+| `start_date`
+| Optionales Datum im Format `YYYY-MM-DD`.
+
+| `cancelDeadline`
+| `cancel_deadline`
+| Optionales Datum im Format `YYYY-MM-DD`.
+
+| `contractEnd`
+| `contract_end`
+| Optionales Datum im Format `YYYY-MM-DD`.
+
+| `autoRenewal`
+| `auto_renewal`
+| Boolescher Wert für automatische Vertragsverlängerung.
+
+| `usageRating`
+| `usage_rating`
+| Nutzungsbewertung, z. B. `OFTEN`, `RARELY`, `NEVER`, `NOT_RATED`.
+|===
+
+Das Feld `user_id` wird nicht vom Frontend gesetzt. Es wird im Backend aus dem
+geprüften Auth-Kontext des Bearer Tokens bestimmt. Dadurch kann Supabase RLS
+sicherstellen, dass Nutzer nur eigene Abos schreiben oder lesen.
+
+Erfolgreiche Antwort:
+
+[source,json]
+----
+{
+  "message": "Abo erfolgreich gespeichert.",
+  "subscription": {
+    "id": 13,
+    "userId": "6c8aee4c-c003-4912-a1f7-1cc450...",
+    "categoryId": 4,
+    "name": "Gym",
+    "provider": "FitX",
+    "cost": 49.99,
+    "currency": "EUR",
+    "interval": "MONTHLY",
+    "startDate": "2026-05-17",
+    "cancelDeadline": "2027-06-15",
+    "contractEnd": "2028-07-15",
+    "autoRenewal": true,
+    "usageRating": "OFTEN",
+    "isPaused": false
+  }
+}
+----
+
+Fehlerfälle:
+
+[cols="1,3", options="header"]
+|===
+| Status | Bedeutung
+
+| `400`
+| Request-Daten sind unvollständig oder fachlich ungültig.
+
+| `401`
+| Bearer Token fehlt oder ist ungültig.
+
+| `500`
+| Speichern in Supabase oder Erzeugen zugehöriger Notifications ist fehlgeschlagen.
+|===
+
+Wenn der lokale Demo-Login nicht verfügbar ist, kann das Backend für den
+Prototyp in einen lokalen Demo-Modus fallen. Dieser Modus ist kein produktives
+Persistenzverhalten und wird im Frontend sichtbar angezeigt.
+
 == Mapping: Notifications
 
 Im aktuellen Guide steht im Beispiel noch `notifications: []`. Da in Supabase bereits eine Tabelle `notifications` existiert, kann das Mapping dafür vorbereitet werden.
@@ -272,9 +380,10 @@ Das Budget liegt laut Datenmodell im Nutzerprofil bzw. in der Tabelle `users`.
 }
 ----
 
-== Hinweise für die spätere Backend-Umsetzung
+== Hinweise zum aktuellen Backend-Stand
 
-Für die spätere Umsetzung in `backend/src/routes/dashboard.ts` sollten folgende Punkte beachtet werden:
+Für die aktuelle Umsetzung in `backend/src/routes/dashboard.ts` und
+`backend/src/routes/subscriptions.ts` gelten folgende Punkte:
 
 * Der Endpoint sollte `GET /api/dashboard` heißen.
 * Die Daten sollten im Backend aus Supabase/PostgreSQL gelesen werden.

@@ -45,7 +45,7 @@ Logic -right-> External : Auth prüfen, Push senden
 |Logikschicht, Auth-/Browser-Dienste.
 
 |Logikschicht
-|Routing, Auth-Prüfung, serverseitige Validierung, Aggregation, CSV-Parsing, Budgetstatus, Fristen-Job und Notification-Erzeugung.
+|Routing, Auth-Prüfung, Auth-Kontext, serverseitige Validierung, Aggregation, CSV-Parsing, Budgetstatus, Fristen-Job und Notification-Erzeugung.
 |Datenschicht, externe Dienste.
 
 |Datenschicht
@@ -236,7 +236,7 @@ Abos anlegen.
 
 |DB-Zugriff
 |pg-Treiber / Supabase Client
-|Prepared Statements, Connection Handling und Mapping von snake_case zu camelCase im einheitlichen PostgreSQL-Dialekt.
+|Request-spezifischer Supabase-Client für nutzerbezogene Zugriffe, Prepared Statements, Connection Handling und Mapping von snake_case zu camelCase im einheitlichen PostgreSQL-Dialekt.
 |===
 
 === Routenstruktur im Frontend
@@ -335,17 +335,24 @@ Nutzungsbewertung.
 actor "Nutzer:in" as User
 participant "Frontend\nSubscriptionForm" as FE
 participant "Backend\nSubscriptions Router" as BE
-database "Datenbank" as DB
+participant "Supabase Auth" as Auth
+database "Supabase\nsubscriptions" as DB
 
 User -> FE : Formular ausfüllen und absenden
 FE -> FE : Client-Plausibilität prüfen
-FE -> BE : POST /api/subscriptions
-BE -> BE : Serverseitige Validierung
+FE -> BE : POST /api/subscriptions\nAuthorization: Bearer <access_token>
+BE -> Auth : Token pruefen
+Auth --> BE : userId / Session
+BE -> BE : Serverseitige Validierung und Auth-Kontext erstellen
 alt Validierung fehlgeschlagen
   BE --> FE : 400 { errors }
   FE --> User : Fehlermeldungen anzeigen
+else Token fehlt oder ungueltig
+  BE --> FE : 401 { errors }
+  FE --> User : Authentifizierungsfehler anzeigen
 else Validierung erfolgreich
-  BE -> DB : INSERT INTO subscriptions
+  BE -> DB : INSERT INTO subscriptions mit request-scoped Supabase-Client
+  DB -> DB : RLS prueft user_id = auth.uid()
   DB --> BE : savedSubscription
   opt Kündigungsfrist vorhanden
     BE -> DB : INSERT INTO notifications
@@ -734,6 +741,9 @@ berechnen.
 
 | Fachliche Fehler
 | Werden vom Express-Router als JSON-Response strukturiert zurückgegeben.
+
+| Authentifizierungsfehler
+| Fehlender oder ungültiger Bearer Token führt zu `401`. Für lokale Tests kann das Backend in einen sichtbaren Demo-Fallback wechseln.
 
 | HTTP-Fehlercodes
 | 400 für Validierungsfehler; 401 für fehlende Authentifizierung; 404 für nicht gefundene Ressourcen; 500 für Systemfehler.

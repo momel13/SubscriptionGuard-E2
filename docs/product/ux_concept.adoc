@@ -163,6 +163,25 @@ stop
 @enduml
 ....
 
+==== Prototyp-Abgleich nach Sprint 3
+
+Der Interaktionsfluss "Abo manuell anlegen" ist im aktuellen Prototyp als
+End-to-End-Ausschnitt umgesetzt:
+
+* Nutzer:innen erfassen Name, Anbieter, Kategorie, Nutzung, Kosten,
+  Zahlungsintervall, Kündigungsfrist, Vertragsende und automatische Verlängerung.
+* Das Frontend validiert offensichtliche Eingaben und sendet die Daten an das
+  Backend.
+* Im Live-Supabase-Modus speichert das Backend das neue Abo in `subscriptions`.
+* Das System zeigt nach dem Speichern Feedback an und aktualisiert die Abo-Liste.
+* Wenn Backend oder Demo-Login nicht verfügbar sind, wird der Mock-/Demo-Fallback
+  sichtbar im Datenquellenlabel angezeigt. Dadurch ist für den Nutzer klar, ob
+  Daten wirklich persistent gespeichert werden.
+
+Offene UX-Verbesserungen bleiben als Backlog-Themen erhalten, insbesondere ein
+deutlicherer Loading State, ein Empty State für leere Abo-Listen und präzisere
+Fehleranzeigen bei API-Problemen.
+
 ---
 
 === Interaktionsfluss: CSV-Import (UC4)

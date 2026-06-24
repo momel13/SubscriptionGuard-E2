@@ -29,22 +29,22 @@ Tragt dort exakt folgende Konfiguration ein:
 
 [source,env]
 ----
-PORT=5000
-SUPABASE_URL=https://ivymlxrvohpcbgocoibh.supabase.co
-SUPABASE_ANON_KEY=sb_publishable_3MOV2eYLrQsGP0WoB6ZvwQ_5ddPXyTh
-DATABASE_URL=postgresql://postgres.ivymlxrvohpcbgocoibh:[PASSWORD]@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+PORT=5001
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<publishable-key>
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<pooler-host>:6543/postgres
 ----
 
 === Wofür sind diese Werte und Links da?
 
 * *`PORT=5000`:* Der lokale Port für euren Node/Express-Server. Das Frontend wird Anfragen an `http://localhost:5000` schicken.
 * *`SUPABASE_URL`:* Die Basis-URL unseres Cloud-Projekts. Das Supabase-SDK im Backend braucht diese, um Authentifizierungs-Anfragen (JWT) an den richtigen Server zu leiten.
-* *`SUPABASE_ANON_KEY`:* Unser öffentlicher Projekt-Schlüssel. Er identifiziert unsere App gegenüber Supabase. Er ist unkritisch und darf geteilt werden.
+* *`SUPABASE_ANON_KEY`:* Publishable Key des Supabase-Projekts. Er identifiziert die App gegenüber Supabase, sollte aber trotzdem nicht unnötig in Dokumentation oder Screenshots auftauchen.
 * *`DATABASE_URL`:* Der direkte Verbindungs-String für unsere PostgreSQL-Queries. Wir nutzen hier extra den *Transaction Pooler* (Port `6543`), da dieser IPv4-kompatibel ist und somit keine Netzwerkprobleme bei euren lokalen Internetanschlüssen verursacht.
 
 [NOTE]
 ====
-Das Master-Passwort für die Datenbank teile ich euch über unseren internen **Discord-Chat** mit! Ersetzt in eurer `.env`-Datei den Platzhalter `[PASSWORD]` (inklusive der eckigen Klammern) durch dieses Passwort.
+Das Datenbankpasswort und weitere Secrets werden nicht im Repository dokumentiert. Nutzt für lokale Tests die aktuelle `.env.example` und befüllt eure lokale `.env` über einen privaten Team-Kanal.
 ====
 
 == 3. Implementierungsschritte für das Team

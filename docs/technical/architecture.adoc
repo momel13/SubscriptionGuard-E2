@@ -170,7 +170,7 @@ IMPORTANT: Qualitätsziele und Einschränkungen werden hier *not* neu definiert 
 
 | *Datenverschlüsselung sensibler Finanzdaten* (Datensicherheit)
 | Erfordert sichere Transportverschlüsselung (HTTPS/TLS) und strikte Mandantentrennung via Row Level Security (RLS) in der Cloud-Datenbank.
-| ADR-002
+| ADR-002, ADR-010
 
 | *Massen-Datenverarbeitung* (Performance / CSV-Import)
 | Rechenintensives CSV-Parsing und Mustererkennung müssen asynchron und serverseitig ablaufen, damit die App im Browser nicht einfriert.
@@ -211,6 +211,17 @@ IMPORTANT: Qualitätsziele und Einschränkungen werden hier *not* neu definiert 
 | *Entscheidung* | Wir verwenden Supabase für das PostgreSQL-Hosting und die Authentifizierung. In der lokalen Entwicklung wird ein Supabase Docker-Container für strikte SQL-Dialekt-Konsistenz genutzt.
 | *Alternativen* | Eigene PostgreSQL-Instanz plus Passport-Library (zu hoher Setup-Aufwand). SQLite (verworfen, da ungeeignet für asynchrone Cron-Jobs und Cross-Device-Sync).
 | *Konsequenzen* | Der MVP kommt schneller voran. EU-Region (Frankfurt) ist für DSGVO-Konformität verpflichtend zu wählen.
+|===
+
+=== ADR-010: Request-scoped Supabase-Client für RLS-geschützte Zugriffe
+[cols="1,3"]
+|===
+| *Status* | Akzeptiert
+| *Datum* | 17.06.2026
+| *Kontext* | Nach Aktivierung von Row Level Security auf `subscriptions` darf das Backend nicht mit einem globalen Supabase-Client ohne Nutzerkontext auf geschützte Tabellen zugreifen. Sonst würden RLS-Regeln entweder nicht korrekt greifen oder produktive Requests unnötig in einen lokalen Demo-Fallback laufen.
+| *Entscheidung* | Für echte Requests erzeugt das Backend einen request-spezifischen Supabase-Client mit dem Bearer Token des angemeldeten Nutzers. Routen wie `POST /api/subscriptions` und `GET /api/dashboard` verwenden diesen Client über den Auth-Kontext. Der Service-Role-Key bleibt ausschließlich serverseitig und wird nur für die lokale Demo-User-Vorbereitung genutzt.
+| *Alternativen* | Globaler Supabase-Client mit Anon-Key (verworfen, da kein sauberer Nutzerkontext für RLS). Service-Role-Key für fachliche Requests (verworfen, da RLS dadurch umgangen würde).
+| *Konsequenzen* | Supabase wendet RLS nutzerbezogen an. Ein Nutzer kann nur eigene Abos lesen oder schreiben. Das Frontend erhält keine Datenbank-Secrets und spricht ausschließlich über das Backend.
 |===
 
 === ADR-003: REST/JSON als primäre Schnittstelle

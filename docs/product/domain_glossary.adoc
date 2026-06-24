@@ -102,6 +102,22 @@ Alle *fachlichen* Begriffe und Abkürzungen werden hier alphabetisch definiert. 
 | Kostenanalyse
 | Auswertung und Visualisierung der Abo-Kosten zur Identifikation von Einsparpotenzialen und doppelten Abos.
 | Auswertung, Statistik
+
+| Live-Supabase-Modus
+| Betriebsmodus des Prototyps, in dem das Frontend über das lokale Backend mit Supabase verbunden ist und Abos persistent gespeichert werden.
+| Live-Modus; nicht: Mock-Fallback
+
+| Mock-Fallback
+| Lokaler Fallback des Prototyps, wenn Backend oder Supabase-Demo-Login nicht verfügbar sind. Daten werden dann nur simuliert bzw. lokal gehalten.
+| Demo-Modus; nicht produktive Speicherung
+
+| Demo-User
+| Vordefinierter Testnutzer für lokale Prototyp-Tests. Wird serverseitig vorbereitet und dient dazu, den Abo-Flow mit Supabase Auth und RLS zu prüfen.
+| Testnutzer
+
+| Row Level Security (RLS)
+| Datenbankmechanismus in Supabase/PostgreSQL, der sicherstellt, dass Nutzer nur eigene Datensätze lesen oder schreiben dürfen.
+| Mandantentrennung, Zugriffsschutz
 |===
 
 
