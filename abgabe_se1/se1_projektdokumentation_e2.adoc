@@ -1,9 +1,9 @@
 // --- 1. Projektthema -------------------------
 = SE I - Projektdokumentation: {project-name}
 // --- 2. Teammitglieder -----------------------
-Moritz Melzer <s88604@htw-dresden.de>; Kevin Fiek <s00000@htw-dresden.de>; Michele_Leon Locke <s00000@htw-dresden.de>; HuyHiep Nguyen <s89028@htw-dresden.de>; Vorname Nachname <s00000@htw-dresden.de>; Joud Khatib <s00000@htw-dresden.de>; Mohsen Hosseinzadehyousefi <s00000@htw-dresden.de>; Aaron Werner <s00000@htw-dresden.de>;
+Moritz Melzer <s88604@htw-dresden.de>; Kevin Fiek <s88870@htw-dresden.de>; Michele_Leon Locke <s88688@htw-dresden.de>; Huy_Hiep Nguyen <s89028@htw-dresden.de>; Fatemeh Pak_Cheshm <s88161@htw-dresden.de>; Joud Khatib <s88435@htw-dresden.de>; Mohsen Hosseinzadehyousefi <s87722@htw-dresden.de>; Aaron Werner <s85685@htw-dresden.de>;
 // --- 3. Abgabedatum --------------------------
-01. Januar 2025
+06. Juli 2026
 // ---------------------------------------------
 :docs: ../docs
 include::{docs}/_includes/default-attributes.inc.adoc[]
