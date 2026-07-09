@@ -3,84 +3,151 @@ Fatemeh <fatemeh.pakcheshm2@stud.htw-dresden.de>
 {localdatetime}
 include::../_includes/default-attributes.inc.adoc[]
 
-
 :toc:
 :toc-title: Inhalt
 :toclevels: 3
 
-
-Dieses Dokument beschreibt die Schritte zur Installation und lokalen Ausführung des Prototyps für das Projekt SubscriptionGuard. Diese Anleitung dient als technische Evilenze für die lokale Lauffähigkeit unseres Walking Skeletons (Aufgabe 3.6).
-
-_Dieses Dokument beschreibt, wie das System gebaut, ausgeliefert und betrieben wird: 
-lokal, in der CI/CD-Pipeline und in den verschiedenen Umgebungen. Es richtet sich
-primär an Entwickler:innen und deckt das ab, was nach dem Schreiben von Code passiert._
-
-_Technische Entscheidungen rund um Containerisierung und CI/CD (das *Warum*) sind
-als ADRs im link:architecture.adoc[Architekturdokument] (`architecture.adoc`) dokumentiert. Dieses Dokument beschreibt das *Wie* und *Was*._
-
----
+Dieses Dokument beschreibt, wie der SubscriptionGuard-Prototyp lokal gestartet,
+konfiguriert und fuer einen Live-Test gegen Supabase geprueft wird. Technische
+Entscheidungen rund um Architektur und Datenhaltung sind im
+link:architecture.adoc[Architekturdokument] dokumentiert.
 
 == Voraussetzungen
 
-Für das Ausführen des Prototyps müssen folgende Tools auf dem lokalen System installiert sein:
-* **Node.js** (Empfohlen: Version 18 LTS oder neuer)
-* **Webbrowser** (Chrome, Firefox oder Safari mit aktivierter JavaScript-Unterstützung)
-* **Git** (Zum Klonen des aktuellen Repository-Standes)
+Fuer das Ausfuehren des Prototyps muessen folgende Tools lokal installiert sein:
 
-== Lokale Ausführung (Schritt-für-Schritt)
+* **Node.js** (empfohlen: Version 18 LTS oder neuer)
+* **Webbrowser** mit aktivierter JavaScript-Unterstuetzung
+* **Git** zum Klonen oder Aktualisieren des Repositorys
+* Zugriff auf die privaten Supabase-Konfigurationswerte fuer lokale Live-Tests
 
-Bitte diese Befehle nacheinander im Terminal ausführen:
+IMPORTANT: Echte `.env`-Werte, Tokens und insbesondere der
+`SUPABASE_SERVICE_ROLE_KEY` duerfen nicht committed und nicht in Screenshots oder
+oeffentlichen Chats geteilt werden.
 
-=== 1. Repository klonen und verifizieren
-Öffnen Sie Ihr Terminal und klonen Sie das Projekt-Repository:
-[source,bash]
+== Lokale Ausfuehrung des Live-Prototyps
+
+=== 1. Repository aktualisieren
+
+[source,powershell]
 ----
-git clone <Hier steht der GitHub-Link zu eurem Projekt>
-cd SubscriptionGuard-E2
-----
-
-=== 2. Abhängigkeiten installieren
-Wir installieren die benötigten Bibliotheken (wie Chart.js für die Diagramme) direkt im Hauptverzeichnis:
-[source,bash]
-----
-npm install
+git checkout main
+git pull
 ----
 
-=== 3. Datenquelle (Data Source) verstehen
-Unser System besitzt zwei Betriebsmodi für die Datenversorgung:
-* **Mock-Datenmodus (Standard):** Nutzt das Objekt `MockDataSource` mit vordefinierten Testdaten (`MOCK_DASHBOARD`).
-* **REST API-Modus (Zielbild):** Wechselt automatisch auf die echte API, wenn `window.SubGuardDataSource` vom Backend registriert ist:
-[source,javascript]
-----
-window.SubGuardDataSource = { 
-  name: 'REST API', 
-  loadDashboard: async () => fetch('/api/dashboard').then(r => r.json()) 
-};
-----
+=== 2. Backend-Abhaengigkeiten installieren
 
-=== 4. Prototyp starten
-Starten Sie den lokalen Entwicklungsserver mit folgendem Befehl:
-[source,bash]
+Das muss normalerweise nur einmal pro Rechner oder nach Aenderungen an
+`package.json` / `package-lock.json` ausgefuehrt werden.
+
+[source,powershell]
 ----
-npm run dev
+cd src\SubGuard-Prototyp\backend
+npm.cmd install
 ----
 
----
+=== 3. Lokale `.env` vorbereiten
 
-== Verifikation und Funktionsprüfung (Testing)
+Die lokale Datei muss hier liegen:
 
-Nach dem erfolgreichen Start können Sie das Walking Skeleton über die Browser-Konsole (F12) und die Benutzeroberfläche so überprüfen:
+[source,text]
+----
+src/SubGuard-Prototyp/backend/.env
+----
 
-=== 1. Überprüfung des App-Zustands (App State)
-Die Funktion `init()` lädt beim Start alle Daten. Stellen Sie sicher, dass das Objekt `appState` folgende Kernkomponenten erfolgreich gerendert hat:
-* **Kosten-Karten (`renderDashboard`):** Überprüfung der monatlichen Kosten (berechnet über `INTERVAL_FACTOR` und `monthCost`).
-* **Fristen-Liste:** Anzeige der kommenden Fristen (z. B. McFit Kündigung in 4 Tagen, berechnet über die Funktion `daysUntil`).
-* **Budget-Komponente (`renderBudget`):** Anzeige, ob die Ausgaben im Rahmen des `budgetTarget` (Standard: 80 EUR) liegen.
-* **Erinnerungen (`renderNotifications`):** Anzeige im Notification Center (z. B. "Monatsbudget zu 92 % aufgebraucht").
+Sie basiert auf `src/SubGuard-Prototyp/backend/.env.example` und enthaelt lokal
+die echten Werte:
 
-=== 2. Datenquellen-Label prüfen
-Sehen Sie ganz unten auf dem Bildschirm nach. Das System gibt eine automatische Rückmeldung über die geladenen Daten:
-* `Klickbarer Prototyp — Mock-Daten` (Standard-Lokalkonfiguration).
-* `Klickbarer Prototyp — REST API` (Wenn die echte Backend-Verbindung aktiv ist).
+[source,dotenv]
+----
+PORT=5001
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<publishable-key>
+SUPABASE_SERVICE_ROLE_KEY=<secret-key>
+SUPABASE_DEMO_EMAIL=demo@subscriptionguard.app
+SUPABASE_DEMO_PASSWORD=<demo-password>
+SUPABASE_DEMO_USER_NAME=Demo User
+----
 
----
+Der Service-Role-Key bleibt ausschliesslich im Backend. Er wird im Prototyp nur
+verwendet, um den Demo-User und das Profil in `public.users` lokal fuer den
+Live-Test vorzubereiten.
+
+=== 4. Backend starten
+
+[source,powershell]
+----
+npm.cmd run dev
+----
+
+Das Backend laeuft standardmaessig auf:
+
+[source,text]
+----
+http://localhost:5001
+----
+
+Das Terminal muss waehrend des Tests offen bleiben.
+
+=== 5. Frontend oeffnen
+
+Die Datei `src/SubGuard-Prototyp/frontend/index.html` kann im Browser geoeffnet
+werden, z. B. ueber "Reveal in File Explorer" und Doppelklick auf die Datei.
+
+Das Frontend ruft danach das lokale Backend auf `http://localhost:5001` auf. Beim
+Start wird `POST /api/auth/demo` verwendet, um einen Demo-Access-Token zu erhalten.
+
+== Datenquellenmodi
+
+[cols="1,3", options="header"]
+|===
+| Modus | Bedeutung
+
+| `Live Express Backend (Supabase)`
+| Das Frontend nutzt das lokale Express-Backend. Der Demo-Login liefert einen echten
+Supabase Access Token. Abo-Daten werden ueber das Backend in Supabase gespeichert
+und unterliegen RLS.
+
+| `Live Express Backend (lokaler Demo-Modus)`
+| Das Backend ist erreichbar, konnte aber keinen gueltigen Supabase-Demo-Login
+vorbereiten. Speichern wird lokal im Backend-Demo-Modus simuliert.
+
+| `Mock-Fallback`
+| Das Backend ist nicht erreichbar oder die Initialisierung ist fehlgeschlagen. Das
+Frontend verwendet lokale Mock-Daten.
+|===
+
+== Verifikation und Funktionspruefung
+
+=== Live-Test: Abo erfassen
+
+. Backend mit `npm.cmd run dev` starten.
+. `frontend/index.html` im Browser oeffnen.
+. Pruefen, dass das Datenquellenlabel `Live Express Backend (Supabase)` anzeigt.
+. Ein Test-Abo anlegen, z. B. "Live Demo Gym".
+. In Supabase im Table Editor die Tabelle `subscriptions` oeffnen und aktualisieren.
+
+Erwartetes Ergebnis: Das neue Abo erscheint als Datensatz in `subscriptions` und
+ist dem Demo-User ueber `user_id` zugeordnet.
+
+=== Fehlerhilfe
+
+[cols="1,3", options="header"]
+|===
+| Beobachtung | Moegliche Ursache / Massnahme
+
+| `Missing Supabase`
+| Die `.env` fehlt, liegt im falschen Ordner oder enthaelt keine gueltigen
+Supabase-Werte.
+
+| `Mock-Fallback`
+| Das Frontend erreicht das Backend nicht. Backend starten, Port `5001` pruefen
+und Browser neu laden.
+
+| `lokaler Demo-Modus`
+| Backend laeuft, aber Demo-Login oder Service-Role-Vorbereitung ist fehlgeschlagen.
+`.env` pruefen und Backend neu starten.
+
+| PowerShell blockiert `npm run dev`
+| Unter Windows `npm.cmd run dev` verwenden.
+|===
